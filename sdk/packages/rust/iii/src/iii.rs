@@ -35,9 +35,10 @@ use crate::{
     channels::{ChannelReader, ChannelWriter, StreamChannelRef},
     error::IIIError,
     protocol::{
-        ErrorBody, HttpInvocationConfig, Message, RegisterFunctionMessage, RegisterServiceMessage,
-        RegisterTriggerInput, RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction,
-        TriggerRequest, UnregisterTriggerMessage, UnregisterTriggerTypeMessage,
+        ErrorBody, HttpInvocationConfig, Message, RegisterFunctionMessage,
+        RegisterFunctionOptions, RegisterServiceMessage, RegisterTriggerInput,
+        RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction, TriggerRequest,
+        UnregisterTriggerMessage, UnregisterTriggerTypeMessage,
     },
     triggers::{Trigger, TriggerConfig, TriggerHandler},
     types::{Channel, RemoteFunctionData, RemoteFunctionHandler, RemoteTriggerTypeData},
@@ -891,12 +892,37 @@ impl III {
         self.register_function_inner(message, handler)
     }
 
-    /// Register a function with a message and handler directly.
+    /// Register a function with full options.
+    ///
+    /// This is the "full options" entry point. For the happy-path of
+    /// registering a closure with no extra options, prefer
+    /// [`register_function`](Self::register_function).
+    ///
+    /// Argument order matches the Node and Python SDKs:
+    /// `(id, handler_or_invocation, options)`.
+    ///
+    /// # Arguments
+    /// * `id` — Function identifier.
+    /// * `handler` — Async closure or [`HttpInvocationConfig`].
+    /// * `options` — Optional metadata. Use [`RegisterFunctionOptions::default()`]
+    ///   when no options are needed.
+    ///
+    /// # Panics
+    /// Panics if `id` is empty or already registered.
     pub fn register_function_with<H: IntoFunctionHandler>(
         &self,
-        mut message: RegisterFunctionMessage,
+        id: impl Into<String>,
         handler: H,
+        options: RegisterFunctionOptions,
     ) -> FunctionRef {
+        let mut message = RegisterFunctionMessage {
+            id: id.into(),
+            description: options.description,
+            request_format: options.request_format,
+            response_format: options.response_format,
+            metadata: options.metadata,
+            invocation: None,
+        };
         let handler = handler.into_parts(&mut message);
         self.register_function_inner(message, handler)
     }
@@ -1749,15 +1775,9 @@ mod tests {
         };
 
         let func_ref = iii.register_function_with(
-            RegisterFunctionMessage {
-                id: "external::my_lambda".to_string(),
-                description: None,
-                request_format: None,
-                response_format: None,
-                metadata: None,
-                invocation: None,
-            },
+            "external::my_lambda",
             config,
+            RegisterFunctionOptions::default(),
         );
 
         assert_eq!(func_ref.id, "external::my_lambda");
@@ -1781,16 +1801,54 @@ mod tests {
         };
 
         iii.register_function_with(
-            RegisterFunctionMessage {
-                id: "".to_string(),
-                description: None,
-                request_format: None,
-                response_format: None,
-                metadata: None,
-                invocation: None,
-            },
+            "",
             config,
+            RegisterFunctionOptions::default(),
         );
+    }
+
+    #[tokio::test]
+    async fn register_function_with_takes_id_handler_options_in_that_order() {
+        let iii = register_worker("ws://localhost:1234", InitOptions::default());
+        let func_ref = iii.register_function_with(
+            "test::reshaped::ordering",
+            |input: Value| async move { Ok(input) },
+            RegisterFunctionOptions {
+                description: Some("reshaped".to_string()),
+                ..Default::default()
+            },
+        );
+        assert_eq!(func_ref.id, "test::reshaped::ordering");
+
+        let funcs = iii.inner.functions.lock().unwrap();
+        let stored = funcs.get("test::reshaped::ordering").expect("stored");
+        assert_eq!(stored.message.id, "test::reshaped::ordering");
+        assert_eq!(stored.message.description.as_deref(), Some("reshaped"));
+        assert!(stored.handler.is_some());
+    }
+
+    #[tokio::test]
+    async fn register_function_with_accepts_http_invocation_config() {
+        let iii = register_worker("ws://localhost:1234", InitOptions::default());
+        let config = HttpInvocationConfig {
+            url: "https://example.com/invoke".to_string(),
+            method: HttpMethod::Post,
+            timeout_ms: Some(30_000),
+            headers: HashMap::new(),
+            auth: None,
+        };
+
+        let func_ref = iii.register_function_with(
+            "external::reshaped",
+            config,
+            RegisterFunctionOptions::default(),
+        );
+
+        assert_eq!(func_ref.id, "external::reshaped");
+        let funcs = iii.inner.functions.lock().unwrap();
+        let stored = funcs.get("external::reshaped").expect("stored");
+        assert!(stored.handler.is_none(), "handler should be None for HTTP invocation");
+        assert!(stored.message.invocation.is_some(), "invocation should be set");
     }
 
     #[tokio::test]
