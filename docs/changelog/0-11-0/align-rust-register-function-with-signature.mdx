@@ -1,0 +1,59 @@
+---
+title: 'Align Rust register_function_with signature with Node/Python'
+description: 'register_function_with now takes (id, handler, options) — the previous (message, handler) form is removed.'
+---
+
+## What changed
+
+The Rust SDK's `III::register_function_with` now takes `(id, handler, options)` in that order, matching the Node and Python SDKs:
+
+| SDK | Full-options signature |
+| --- | --- |
+| Node | `registerFunction(functionId, handler, options?)` |
+| Python | `register_function(function_id, handler, *, description, metadata, request_format, response_format)` |
+| Rust | `register_function_with(id, handler, options)` |
+
+A new `RegisterFunctionOptions` struct holds the optional metadata fields (`description`, `request_format`, `response_format`, `metadata`). It mirrors Node's `RegisterFunctionOptions` and Python's keyword arguments.
+
+```rust
+// Before
+iii.register_function_with(
+    RegisterFunctionMessage {
+        id: "external::my_lambda".to_string(),
+        description: None,
+        request_format: None,
+        response_format: None,
+        metadata: None,
+        invocation: None,
+    },
+    http_config,
+);
+
+// After
+iii.register_function_with(
+    "external::my_lambda",
+    http_config,
+    RegisterFunctionOptions::default(),
+);
+```
+
+`register_function(id, f)` and the tuple form `register_function((message, handler))` are unchanged.
+
+## Why
+
+`register_function_with` was the only "full options" entry point across the three SDKs that put the message/config first and the handler second. Aligning the order removes a papercut for developers moving between SDKs and tightens the cross-SDK API contract so all three describe the same concept in the same way.
+
+Introducing `RegisterFunctionOptions` (rather than reusing `RegisterFunctionMessage`) keeps the input shape symmetrical with Node's `Omit<RegisterFunctionMessage, 'message_type' | 'id'>` — `id` becomes a positional argument and `invocation` is set through the `handler` parameter when an `HttpInvocationConfig` is passed.
+
+## Migration
+
+Replace every `register_function_with(RegisterFunctionMessage { id, ... }, handler)` call with `register_function_with(id, handler, RegisterFunctionOptions { ... })`.
+
+| Before | After |
+| --- | --- |
+| `register_function_with(RegisterFunctionMessage::with_id("foo".into()), h)` | `register_function_with("foo", h, RegisterFunctionOptions::default())` |
+| `register_function_with(RegisterFunctionMessage { id: "foo".into(), description: Some("d".into()), ..Default::default() }, h)` | `register_function_with("foo", h, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` |
+
+If you want zero options, prefer `register_function(id, f)` for closures — `register_function_with` is the full-options path.
+
+`RegisterFunctionOptions` is exported from the crate root: `use iii_sdk::RegisterFunctionOptions;`.
