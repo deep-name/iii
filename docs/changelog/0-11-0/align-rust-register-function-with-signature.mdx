@@ -52,7 +52,7 @@ Replace every `register_function_with(RegisterFunctionMessage { id, ... }, handl
 | Before | After |
 | --- | --- |
 | `register_function_with(RegisterFunctionMessage::with_id("foo".into()), h)` | `register_function_with("foo", h, RegisterFunctionOptions::default())` |
-| `register_function_with(RegisterFunctionMessage { id: "foo".into(), description: Some("d".into()), ..Default::default() }, h)` | `register_function_with("foo", h, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` |
+| `register_function_with(RegisterFunctionMessage::with_id("foo".into()).with_description("d".into()), h)` | `register_function_with("foo", h, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` |
 
 If you want zero options, prefer `register_function(id, f)` for closures — `register_function_with` is the full-options path.
 
