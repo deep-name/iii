@@ -30,3 +30,12 @@ async fn init_applies_otel_config_before_auto_connect() {
         |input| async move { Ok(input) },
     ));
 }
+
+#[test]
+fn register_function_options_is_publicly_exported() {
+    use iii_sdk::RegisterFunctionOptions;
+    let _ = RegisterFunctionOptions {
+        description: Some("test".to_string()),
+        ..Default::default()
+    };
+}

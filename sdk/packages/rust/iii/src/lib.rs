@@ -27,8 +27,9 @@ pub use iii::{
 pub use logger::Logger;
 pub use protocol::{
     EnqueueResult, ErrorBody, FunctionMessage, HttpAuthConfig, HttpInvocationConfig, HttpMethod,
-    Message, RegisterFunctionMessage, RegisterServiceMessage, RegisterTriggerInput,
-    RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction, TriggerRequest,
+    Message, RegisterFunctionMessage, RegisterFunctionOptions, RegisterServiceMessage,
+    RegisterTriggerInput, RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction,
+    TriggerRequest,
 };
 pub use stream::UpdateBuilder;
 pub use structs::{
