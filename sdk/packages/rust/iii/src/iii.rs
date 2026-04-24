@@ -877,14 +877,18 @@ impl III {
     /// iii.register_function(RegisterFunction::new("greet", greet));
     /// ```
     ///
-    /// Also accepts a two-argument form via [`register_function_with`](III::register_function_with):
+    /// Also accepts a `(id, handler, options)` form via [`register_function_with`](III::register_function_with):
     /// ```rust,no_run
-    /// # use iii_sdk::{register_worker, InitOptions, RegisterFunctionMessage};
+    /// # use iii_sdk::{register_worker, InitOptions, RegisterFunctionOptions};
     /// # use serde_json::{json, Value};
     /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
     /// iii.register_function_with(
-    ///     RegisterFunctionMessage::with_id("echo".to_string()),
+    ///     "echo",
     ///     |input: Value| async move { Ok(json!({"echo": input})) },
+    ///     RegisterFunctionOptions {
+    ///         description: Some("echoes the input".to_string()),
+    ///         ..Default::default()
+    ///     },
     /// );
     /// ```
     pub fn register_function<R: IntoFunctionRegistration>(&self, registration: R) -> FunctionRef {
