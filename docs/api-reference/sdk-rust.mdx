@@ -141,7 +141,7 @@ register_function_with(id: impl Into<String>, handler: H, options: RegisterFunct
 | --- | --- | --- | --- |
 | `id` | `impl Into<String>` | Yes | Function identifier. |
 | `handler` | `H` | Yes | Async closure or [`HttpInvocationConfig`]. |
-| `options` | `RegisterFunctionOptions` | Yes | Optional metadata. Use [`RegisterFunctionOptions::default()`] when no options are needed. |
+| `options` | [`RegisterFunctionOptions`](#registerfunctionoptions) | Yes | Optional metadata. Use [`RegisterFunctionOptions::default()`] when no options are needed. |
 
 ### register_service
 
@@ -425,7 +425,7 @@ logger.debug("Cache lookup", Some(json!({ "key": "user:42", "hit": false })));
 
 ## Types
 
-[`InitOptions`](#initoptions) · [`IIIError`](#iiierror) · [`IIIConnectionState`](#iiiconnectionstate) · [`TriggerRequest`](#triggerrequest) · [`TriggerAction`](#triggeraction) · [`Channel`](#channel) · [`ChannelReader`](#channelreader) · [`ChannelWriter`](#channelwriter) · [`ChannelDirection`](#channeldirection) · [`StreamChannelRef`](#streamchannelref) · [`FunctionRef`](#functionref) · [`WorkerMetadata`](#workermetadata) · [`Trigger`](#trigger) · [`RegisterServiceMessage`](#registerservicemessage) · [`OtelConfig`](#otelconfig) · [`ReconnectionConfig`](#reconnectionconfig)
+[`InitOptions`](#initoptions) · [`IIIError`](#iiierror) · [`IIIConnectionState`](#iiiconnectionstate) · [`TriggerRequest`](#triggerrequest) · [`TriggerAction`](#triggeraction) · [`Channel`](#channel) · [`ChannelReader`](#channelreader) · [`ChannelWriter`](#channelwriter) · [`ChannelDirection`](#channeldirection) · [`StreamChannelRef`](#streamchannelref) · [`FunctionRef`](#functionref) · [`WorkerMetadata`](#workermetadata) · [`Trigger`](#trigger) · [`RegisterFunctionOptions`](#registerfunctionoptions) · [`RegisterServiceMessage`](#registerservicemessage) · [`OtelConfig`](#otelconfig) · [`ReconnectionConfig`](#reconnectionconfig)
 
 ### InitOptions
 
@@ -564,6 +564,22 @@ Call [`unregister`](Trigger::unregister) to remove the trigger from the engine.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `unregister` | `fn()` | Yes | Remove this trigger from the engine. |
+
+### RegisterFunctionOptions
+
+Optional fields for [`crate::III::register_function_with`].
+
+Mirrors Node's `RegisterFunctionOptions` and Python's keyword arguments
+(`description`, `metadata`, `request_format`, `response_format`).
+`id` is a positional argument and `invocation` is set via the handler
+argument when the caller passes an [`HttpInvocationConfig`].
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `description` | `Option<String>` | No | - |
+| `request_format` | `Option<Value>` | No | - |
+| `response_format` | `Option<Value>` | No | - |
+| `metadata` | `Option<Value>` | No | - |
 
 ### RegisterServiceMessage
 
