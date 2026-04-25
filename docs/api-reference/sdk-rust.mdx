@@ -425,7 +425,7 @@ logger.debug("Cache lookup", Some(json!({ "key": "user:42", "hit": false })));
 
 ## Types
 
-[`InitOptions`](#initoptions) · [`IIIError`](#iiierror) · [`IIIConnectionState`](#iiiconnectionstate) · [`TriggerRequest`](#triggerrequest) · [`TriggerAction`](#triggeraction) · [`Channel`](#channel) · [`ChannelReader`](#channelreader) · [`ChannelWriter`](#channelwriter) · [`ChannelDirection`](#channeldirection) · [`StreamChannelRef`](#streamchannelref) · [`FunctionRef`](#functionref) · [`WorkerMetadata`](#workermetadata) · [`Trigger`](#trigger) · [`RegisterFunctionOptions`](#registerfunctionoptions) · [`RegisterServiceMessage`](#registerservicemessage) · [`OtelConfig`](#otelconfig) · [`ReconnectionConfig`](#reconnectionconfig)
+[`InitOptions`](#initoptions) · [`IIIError`](#iiierror) · [`IIIConnectionState`](#iiiconnectionstate) · [`TriggerRequest`](#triggerrequest) · [`TriggerAction`](#triggeraction) · [`HttpInvocationConfig`](#httpinvocationconfig) · [`HttpAuthConfig`](#httpauthconfig) · [`HttpMethod`](#httpmethod) · [`Channel`](#channel) · [`ChannelReader`](#channelreader) · [`ChannelWriter`](#channelwriter) · [`ChannelDirection`](#channeldirection) · [`StreamChannelRef`](#streamchannelref) · [`FunctionRef`](#functionref) · [`WorkerMetadata`](#workermetadata) · [`Trigger`](#trigger) · [`RegisterFunctionOptions`](#registerfunctionoptions) · [`RegisterServiceMessage`](#registerservicemessage) · [`OtelConfig`](#otelconfig) · [`ReconnectionConfig`](#reconnectionconfig)
 
 ### InitOptions
 
@@ -487,6 +487,43 @@ the invocation.
 | --- | --- | --- | --- |
 | `Enqueue` | `{ queue: String }` | Yes | Routes the invocation through a named queue. |
 | `Void` | `unit` | Yes | Fire-and-forget routing. |
+
+### HttpInvocationConfig
+
+Configuration for registering an HTTP-invoked function (Lambda, Cloudflare
+Workers, etc.) instead of a local handler.
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `url` | `String` | Yes | - |
+| `method` | [`HttpMethod`](#httpmethod) | Yes | - |
+| `timeout_ms` | `Option<u64>` | No | - |
+| `headers` | `HashMap<String, String>` | Yes | - |
+| `auth` | Option&lt;[`HttpAuthConfig`](#httpauthconfig)&gt; | No | - |
+
+### HttpAuthConfig
+
+Authentication configuration for HTTP-invoked functions.
+
+- `Hmac` -- HMAC signature verification using a shared secret.
+- `Bearer` -- Bearer token authentication.
+- `ApiKey` -- API key sent via a custom header.
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `Hmac` | `{ secret_key: String }` | Yes | - |
+| `Bearer` | `{ token_key: String }` | Yes | - |
+| `ApiKey` | `{ header: String, value_key: String }` | Yes | - |
+
+### HttpMethod
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `Get` | `unit` | Yes | - |
+| `Post` | `unit` | Yes | - |
+| `Put` | `unit` | Yes | - |
+| `Patch` | `unit` | Yes | - |
+| `Delete` | `unit` | Yes | - |
 
 ### Channel
 
