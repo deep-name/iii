@@ -10,7 +10,7 @@
 ///   - Env vars: SLACK_WEBHOOK_TOKEN, STRIPE_API_KEY, ORDER_WEBHOOK_SECRET
 
 use iii_sdk::{
-    register_worker, InitOptions, RegisterFunction, RegisterFunctionMessage,
+    register_worker, InitOptions, RegisterFunction, RegisterFunctionOptions,
     TriggerRequest, TriggerAction, HttpInvocationConfig, HttpAuthConfig,
     builtin_triggers::*, IIITrigger, Logger,
     protocol::HttpMethod as ProtoHttpMethod,
@@ -54,17 +54,18 @@ fn main() {
     ];
 
     for (path, id) in legacy_endpoints {
-        let mut msg = RegisterFunctionMessage::with_id(id.into())
-            .with_description(format!("Proxy legacy endpoint {path}"));
-
         iii.register_function_with(
-            msg,
+            id,
             HttpInvocationConfig {
                 url: format!("{legacy_base_url}{path}"),
                 method: ProtoHttpMethod::Post,
                 timeout_ms: Some(8000),
                 headers: HashMap::new(),
                 auth: None,
+            },
+            RegisterFunctionOptions {
+                description: Some(format!("Proxy legacy endpoint {path}")),
+                ..Default::default()
             },
         );
     }
@@ -73,8 +74,7 @@ fn main() {
     // HTTP-invoked function: Slack webhook (bearer auth)
     // ---
     iii.register_function_with(
-        RegisterFunctionMessage::with_id("integrations::slack-notify".into())
-            .with_description("POST notification to Slack webhook".into()),
+        "integrations::slack-notify",
         HttpInvocationConfig {
             url: "https://hooks.slack.example.com/services/incoming".into(),
             method: ProtoHttpMethod::Post,
@@ -88,14 +88,17 @@ fn main() {
                 token_key: "SLACK_WEBHOOK_TOKEN".into(),
             }),
         },
+        RegisterFunctionOptions {
+            description: Some("POST notification to Slack webhook".into()),
+            ..Default::default()
+        },
     );
 
     // ---
     // HTTP-invoked function: Stripe charges (api_key auth)
     // ---
     iii.register_function_with(
-        RegisterFunctionMessage::with_id("integrations::stripe-charge".into())
-            .with_description("Create a charge via Stripe API".into()),
+        "integrations::stripe-charge",
         HttpInvocationConfig {
             url: "https://api.stripe.example.com/v1/charges".into(),
             method: ProtoHttpMethod::Post,
@@ -110,14 +113,17 @@ fn main() {
                 value_key: "STRIPE_API_KEY".into(),
             }),
         },
+        RegisterFunctionOptions {
+            description: Some("Create a charge via Stripe API".into()),
+            ..Default::default()
+        },
     );
 
     // ---
     // HTTP-invoked function: Analytics endpoint (no auth)
     // ---
     iii.register_function_with(
-        RegisterFunctionMessage::with_id("integrations::analytics-track".into())
-            .with_description("POST event to analytics service".into()),
+        "integrations::analytics-track",
         HttpInvocationConfig {
             url: "https://analytics.internal.example.com/events".into(),
             method: ProtoHttpMethod::Post,
@@ -125,14 +131,17 @@ fn main() {
             headers: HashMap::new(),
             auth: None,
         },
+        RegisterFunctionOptions {
+            description: Some("POST event to analytics service".into()),
+            ..Default::default()
+        },
     );
 
     // ---
     // HTTP-invoked function: Order status webhook (hmac auth)
     // ---
     iii.register_function_with(
-        RegisterFunctionMessage::with_id("integrations::order-webhook".into())
-            .with_description("POST order status change to fulfillment partner".into()),
+        "integrations::order-webhook",
         HttpInvocationConfig {
             url: "https://fulfillment.partner.example.com/webhooks/orders".into(),
             method: ProtoHttpMethod::Post,
@@ -141,6 +150,10 @@ fn main() {
             auth: Some(HttpAuthConfig::Hmac {
                 secret_key: "ORDER_WEBHOOK_SECRET".into(),
             }),
+        },
+        RegisterFunctionOptions {
+            description: Some("POST order status change to fulfillment partner".into()),
+            ..Default::default()
         },
     );
 

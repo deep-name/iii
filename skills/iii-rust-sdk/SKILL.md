@@ -26,7 +26,7 @@ Add to `Cargo.toml`:
 | `register_worker(url, InitOptions)`                | Connect to the engine, returns `III` client                                      |
 | `III::register_function(RegisterFunction::new(id, handler))` | Register a sync function using the builder API                          |
 | `III::register_function(RegisterFunction::new_async(id, handler))` | Register an async function using the builder API                    |
-| `III::register_function_with(msg, handler)`        | Two-arg convenience method for function registration                             |
+| `III::register_function_with(id, handler, options)` | Full-options registration (mirror of Node `registerFunction(id, handler, options?)`) |
 | `RegisterFunction`                                 | Builder with `.description()` and auto-generated request schemas via `schemars`  |
 | `III::register_trigger(type, function_id, config)` | Bind a trigger to a function                                                     |
 | `III::trigger(TriggerRequest)`                     | Invoke a function                                                                |
