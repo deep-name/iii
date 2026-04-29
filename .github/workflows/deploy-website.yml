@@ -80,6 +80,7 @@ jobs:
       - name: Sync HTML and content files (no cache, must revalidate)
         run: |
           aws s3 sync website/ "s3://${{ vars.S3_BUCKET }}/" \
+            --delete \
             --cache-control "public,max-age=0,must-revalidate" \
             --exclude "*" \
             --include "*.html" \
