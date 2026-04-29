@@ -31,7 +31,6 @@ The answer to every question about how work gets done is the same: add a worker.
 - [Homepage](https://iii.dev/) — the positioning
 - [Manifesto](https://iii.dev/manifesto) — the paradigm argument
 - [Docs](https://iii.dev/docs) — full documentation
-- [AI-readable homepage](https://iii.dev/ai) — plain-text snapshot
 - [AGENTS.md](https://iii.dev/AGENTS.md) — deeper context for autonomous agents
 - [GitHub](https://github.com/iii-hq/iii) — Rust engine, TS/Python/Rust SDKs, Elastic-2.0
 

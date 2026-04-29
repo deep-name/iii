@@ -81,6 +81,6 @@ Elastic-2.0. Source available. Free for direct use; restrictions on offering iii
 - Docs: https://iii.dev/docs
 - GitHub: https://github.com/iii-hq/iii
 - llms.txt: https://iii.dev/llms.txt
-- Machine-readable homepage: https://iii.dev/ai
+- For AI agents: https://iii.dev/AGENTS.md
 
 Last updated: 2026-04-23
