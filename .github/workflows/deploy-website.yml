@@ -37,6 +37,22 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install website deps
+        run: pnpm install --filter iii-website... --frozen-lockfile
+
+      - name: Build (renders /ai snapshot from index.html)
+        working-directory: website
+        run: pnpm build
+
       - name: Configure AWS credentials (GitHub OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -49,7 +65,11 @@ jobs:
             --delete \
             --cache-control "public,max-age=31536000,immutable" \
             --exclude "*.html" \
+            --exclude "*.md" \
+            --exclude "*.txt" \
+            --exclude "*.xml" \
             --exclude "node_modules/*" \
+            --exclude "scripts/*" \
             --exclude "package.json" \
             --exclude "package-lock.json" \
             --exclude "pnpm-lock.yaml" \
@@ -57,13 +77,18 @@ jobs:
             --exclude "README.md" \
             --exclude "vercel.json"
 
-      - name: Sync HTML (no cache, must revalidate)
+      - name: Sync HTML and content files (no cache, must revalidate)
         run: |
           aws s3 sync website/ "s3://${{ vars.S3_BUCKET }}/" \
-            --delete \
             --cache-control "public,max-age=0,must-revalidate" \
             --exclude "*" \
-            --include "*.html"
+            --include "*.html" \
+            --include "*.md" \
+            --include "*.txt" \
+            --include "*.xml" \
+            --exclude "README.md" \
+            --exclude "node_modules/*" \
+            --exclude "scripts/*"
 
       - name: Create CloudFront invalidation
         id: invalidation
