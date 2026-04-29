@@ -119,16 +119,55 @@ function extractSections(body) {
   return sections;
 }
 
+function extractCodeBlock(attrs, raw) {
+  // Pull data-lang for the markdown fence hint, default to no language.
+  const langMatch = attrs.match(/data-lang=["']([\w+-]+)["']/i);
+  const lang = langMatch ? langMatch[1] : "";
+
+  // Strip the inner <code> wrapper plus any inline syntax-highlight spans
+  // (e.g. <span class="hl-cmt" data-cmt="…">), keeping their text content
+  // so inline comments survive in the snippet.
+  let code = raw
+    .replace(/<\/?code\b[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "");
+  code = decodeEntities(code);
+
+  // Trim leading/trailing blank lines but preserve internal indentation —
+  // critical for code readability.
+  code = code.replace(/^\n+/, "").replace(/\s+$/, "");
+
+  return { lang, code };
+}
+
 function sectionToMarkdown({ label, html }) {
   const lines = [`## ${label}`, ""];
 
-  // Pull out ordered headings, paragraphs, list items in document order.
-  const blockRe = /<(h[1-4]|p|li|blockquote)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+  // Pull out ordered headings, paragraphs, list items, and code blocks in
+  // document order. Capture the opening-tag attributes so <pre data-lang>
+  // can be turned into a fenced code block with the right language hint.
+  const blockRe = /<(h[1-4]|p|li|blockquote|pre)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
   const seen = new Set();
   let m;
   while ((m = blockRe.exec(html)) !== null) {
     const tag = m[1].toLowerCase();
-    const raw = m[2];
+    const attrs = m[2];
+    const raw = m[3];
+
+    if (tag === "pre") {
+      const { lang, code } = extractCodeBlock(attrs, raw);
+      if (!code) continue;
+      // Dedupe by raw code content (different code examples must survive
+      // even when their language matches a previous block).
+      const key = `pre::${code}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      lines.push(`\`\`\`${lang}`);
+      lines.push(code);
+      lines.push("```");
+      lines.push("");
+      continue;
+    }
+
     const text = tagText(raw);
     if (!text || text.length < 2) continue;
     // Dedupe identical text within the same section (animation scaffolding
