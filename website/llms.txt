@@ -1,6 +1,6 @@
 # iii
 
-> iii turns distributed backend complexity into a simple set of real-time, interoperable primitives called Functions, Triggers, and Workers. The result is coordinated execution that behaves as if it were a single runtime.
+> iii makes backend engineering unreasonably scalable. Software engineering is an exercise in assembling categories of services, and the complexity of those integrations is quadratic — overwhelming for both developers and AI context. iii eliminates that complexity by shipping every integration the way node ships packages: install a worker, and every other worker can use it. The integration cost stops compounding and stays linear as the system grows.
 
 iii is an engine and a single open protocol (JSON over WebSocket). Three primitives:
 
@@ -68,4 +68,4 @@ SDKs:
 - Node (browser, RBAC-scoped): `npm install iii-browser-sdk`
 - Python: `pip install iii-sdk`
 
-Last updated: 2026-04-23
+Last updated: 2026-04-29

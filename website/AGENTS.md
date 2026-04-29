@@ -84,4 +84,4 @@ Elastic-2.0. Source available. Free for direct use; restrictions on offering iii
 - Machine-readable homepage: https://iii.dev/ai (raw markdown at https://iii.dev/ai.md)
 - For AI agents: https://iii.dev/AGENTS.md
 
-Last updated: 2026-04-23
+Last updated: 2026-04-29
