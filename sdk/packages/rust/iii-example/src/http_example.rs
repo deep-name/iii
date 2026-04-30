@@ -11,7 +11,7 @@ pub fn setup(iii: &III) {
     let get_client = client.clone();
     iii.register_function(
         "api::get::http::rust::fetch",
-        RegisterFunction::raw(move |_input| {
+        RegisterFunction::untyped(move |_input| {
             let client = get_client.clone();
             let logger = Logger::new();
 
@@ -58,7 +58,7 @@ pub fn setup(iii: &III) {
     let post_client = client.clone();
     iii.register_function(
         "api::post::http::rust::fetch",
-        RegisterFunction::raw(move |input| {
+        RegisterFunction::untyped(move |input| {
             let client = post_client.clone();
             async move {
                 let logger = Logger::new();

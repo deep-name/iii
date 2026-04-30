@@ -77,7 +77,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::ls",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("List directory contents inside a sandbox".to_string()),
     );
 }

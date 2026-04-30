@@ -204,12 +204,12 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::ew::public::echo",
-            RegisterFunction::raw(|input: Value| async move { Ok(json!({ "echoed": input })) }),
+            RegisterFunction::untyped(|input: Value| async move { Ok(json!({ "echoed": input })) }),
         ));
 
         refs.push(iii.register_function(
             "test::ew::valid-token-echo",
-            RegisterFunction::raw(|input: Value| async move {
+            RegisterFunction::untyped(|input: Value| async move {
                 Ok(json!({ "echoed": input, "valid_token": true }))
             }),
         ));
@@ -217,16 +217,18 @@ fn ensure_functions_registered() {
         refs.push(
             iii.register_function(
                 "test::ew::meta-public",
-                RegisterFunction::raw(
-                    |input: Value| async move { Ok(json!({ "meta_echoed": input })) },
-                )
+                RegisterFunction::untyped(|input: Value| async move {
+                    Ok(json!({ "meta_echoed": input }))
+                })
                 .metadata(json!({ "ew_public": true })),
             ),
         );
 
         refs.push(iii.register_function(
             "test::ew::private",
-            RegisterFunction::raw(|_input: Value| async move { Ok(json!({ "private": true })) }),
+            RegisterFunction::untyped(
+                |_input: Value| async move { Ok(json!({ "private": true })) },
+            ),
         ));
     });
 }
@@ -375,7 +377,9 @@ async fn should_deny_function_registration_via_hook() {
 
     iii_client.register_function(
         "denied::blocked-fn",
-        RegisterFunction::raw(|_input: Value| async move { Ok(json!({ "should": "not reach" })) }),
+        RegisterFunction::untyped(
+            |_input: Value| async move { Ok(json!({ "should": "not reach" })) },
+        ),
     );
 
     tokio::time::sleep(Duration::from_millis(1000)).await;
@@ -527,7 +531,7 @@ async fn should_apply_function_registration_prefix_and_strip_on_invocation() {
 
     iii_client.register_function(
         "prefixed-echo",
-        RegisterFunction::raw(|input: Value| async move { Ok(json!({ "echoed": input })) }),
+        RegisterFunction::untyped(|input: Value| async move { Ok(json!({ "echoed": input })) }),
     );
 
     tokio::time::sleep(Duration::from_millis(1000)).await;

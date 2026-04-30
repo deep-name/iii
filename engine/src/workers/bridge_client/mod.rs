@@ -269,7 +269,7 @@ impl Worker for BridgeClientWorker {
 
             bridge.register_function(
                 remote_function,
-                iii_sdk::RegisterFunction::raw(move |input| {
+                iii_sdk::RegisterFunction::untyped(move |input| {
                     let engine = engine.clone();
                     let local_function = local_function.clone();
                     async move {

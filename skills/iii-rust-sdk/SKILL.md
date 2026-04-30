@@ -26,7 +26,7 @@ Add to `Cargo.toml`:
 | `register_worker(url, InitOptions)`                | Connect to the engine, returns `III` client                                      |
 | `III::register_function(id, RegisterFunction::new(handler))` | Register a sync typed function (schemas auto-extracted via `schemars`) |
 | `III::register_function(id, RegisterFunction::new_async(handler))` | Register an async typed function (schemas auto-extracted via `schemars`) |
-| `III::register_function(id, RegisterFunction::raw(handler))` | Register an async closure taking `serde_json::Value` (no schema introspection) |
+| `III::register_function(id, RegisterFunction::untyped(handler))` | Register an async closure taking `serde_json::Value` (no schema introspection) |
 | `III::register_function(id, RegisterFunction::http(http_config))` | Register an HTTP-invoked function (Lambda, Workers, etc.) |
 | `RegisterFunction`                                 | Builder with `.description()`, `.metadata()`, `.request_format()`, `.response_format()` |
 | `III::register_trigger(type, function_id, config)` | Bind a trigger to a function                                                     |

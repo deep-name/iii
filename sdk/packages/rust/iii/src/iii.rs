@@ -467,7 +467,7 @@ fn empty_message() -> RegisterFunctionMessage {
 /// Constructors:
 /// - [`RegisterFunction::new`] — sync function with auto-extracted schemas.
 /// - [`RegisterFunction::new_async`] — async function with auto-extracted schemas.
-/// - [`RegisterFunction::raw`] — async closure taking [`Value`]; no schema
+/// - [`RegisterFunction::untyped`] — async closure taking [`Value`]; no schema
 ///   introspection (use [`RegisterFunction::request_format`] /
 ///   [`RegisterFunction::response_format`] to provide schemas).
 /// - [`RegisterFunction::http`] — function invoked over HTTP (Lambda,
@@ -524,7 +524,7 @@ impl RegisterFunction {
     /// No schema introspection is performed — set schemas explicitly with
     /// [`request_format`](Self::request_format) /
     /// [`response_format`](Self::response_format) if needed.
-    pub fn raw<F, Fut>(f: F) -> Self
+    pub fn untyped<F, Fut>(f: F) -> Self
     where
         F: Fn(Value) -> Fut + Send + Sync + 'static,
         Fut: std::future::Future<Output = Result<Value, IIIError>> + Send + 'static,
@@ -783,7 +783,7 @@ impl III {
     /// # Arguments
     /// * `id` — Function identifier.
     /// * `registration` — Built via [`RegisterFunction::new`],
-    ///   [`RegisterFunction::new_async`], [`RegisterFunction::raw`], or
+    ///   [`RegisterFunction::new_async`], [`RegisterFunction::untyped`], or
     ///   [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`,
     ///   `.request_format(...)`, `.response_format(...)` as needed.
     ///
@@ -819,7 +819,7 @@ impl III {
     /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
     /// iii.register_function(
     ///     "echo",
-    ///     RegisterFunction::raw(|input: Value| async move { Ok(json!({"echo": input})) }),
+    ///     RegisterFunction::untyped(|input: Value| async move { Ok(json!({"echo": input})) }),
     /// );
     /// ```
     ///
@@ -1724,7 +1724,8 @@ mod tests {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let func_ref = iii.register_function(
             "test::reshaped::ordering",
-            RegisterFunction::raw(|input: Value| async move { Ok(input) }).description("reshaped"),
+            RegisterFunction::untyped(|input: Value| async move { Ok(input) })
+                .description("reshaped"),
         );
         assert_eq!(func_ref.id, "test::reshaped::ordering");
 
@@ -1803,15 +1804,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn register_function_raw_runs_handler() {
+    async fn register_function_untyped_runs_handler() {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let _func_ref = iii.register_function(
-            "test::raw",
-            RegisterFunction::raw(|input: Value| async move { Ok(json!({ "echo": input })) }),
+            "test::untyped",
+            RegisterFunction::untyped(|input: Value| async move { Ok(json!({ "echo": input })) }),
         );
         let handler = {
             let funcs = iii.inner.functions.lock().unwrap();
-            let stored = funcs.get("test::raw").expect("stored");
+            let stored = funcs.get("test::untyped").expect("stored");
             stored.handler.as_ref().expect("has handler").clone()
         };
         let out = handler(json!({"name": "world"})).await.unwrap();

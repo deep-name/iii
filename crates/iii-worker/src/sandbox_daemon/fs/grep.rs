@@ -113,7 +113,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::grep",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Search for a pattern in files inside a sandbox".to_string()),
     );
 }

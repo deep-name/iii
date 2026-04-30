@@ -151,7 +151,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::read",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Stream-download a file from a sandbox".to_string()),
     );
 }

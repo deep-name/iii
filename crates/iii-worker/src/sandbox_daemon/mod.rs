@@ -113,7 +113,7 @@ fn register_sandbox_create(
     };
     let _ = iii.register_function(
         "sandbox::create",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Create an ephemeral sandbox VM from a preset image".to_string()),
     );
 }
@@ -140,7 +140,7 @@ fn register_sandbox_exec(
     };
     let _ = iii.register_function(
         "sandbox::exec",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Execute a command inside a live sandbox".to_string()),
     );
 }
@@ -167,7 +167,7 @@ fn register_sandbox_stop(
     };
     let _ = iii.register_function(
         "sandbox::stop",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Stop and remove a running sandbox".to_string()),
     );
 }
@@ -187,6 +187,7 @@ fn register_sandbox_list(
     };
     let _ = iii.register_function(
         "sandbox::list",
-        iii_sdk::RegisterFunction::raw(handler).description("List active sandboxes".to_string()),
+        iii_sdk::RegisterFunction::untyped(handler)
+            .description("List active sandboxes".to_string()),
     );
 }

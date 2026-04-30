@@ -7,7 +7,7 @@ async fn init_with_runtime_returns_sdk_instance() {
     // API should remain usable immediately after register_worker()
     client.register_function(
         "test::echo",
-        RegisterFunction::raw(|input: Value| async move { Ok(input) }),
+        RegisterFunction::untyped(|input: Value| async move { Ok(input) }),
     );
 }
 
@@ -28,6 +28,6 @@ async fn init_applies_otel_config_before_auto_connect() {
 
     client.register_function(
         "test::echo::otel",
-        RegisterFunction::raw(|input: Value| async move { Ok(input) }),
+        RegisterFunction::untyped(|input: Value| async move { Ok(input) }),
     );
 }

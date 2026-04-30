@@ -253,7 +253,7 @@ impl StreamAdapter for BridgeAdapter {
         let pub_sub = self.pub_sub.clone();
         self.bridge.register_function(
             handler_function_id.clone(),
-            iii_sdk::RegisterFunction::raw(move |data| {
+            iii_sdk::RegisterFunction::untyped(move |data| {
                 let pub_sub = pub_sub.clone();
 
                 async move {

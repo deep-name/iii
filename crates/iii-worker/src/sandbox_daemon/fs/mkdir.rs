@@ -92,7 +92,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::mkdir",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Create a directory inside a sandbox".to_string()),
     );
 }

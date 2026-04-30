@@ -19,7 +19,7 @@ async fn stream_data_from_sender_to_processor() {
     let iii_for_processor = iii.clone();
     iii.register_function(
         "test::data::processor::rs",
-        RegisterFunction::raw(move |input: Value| {
+        RegisterFunction::untyped(move |input: Value| {
             let iii = iii_for_processor.clone();
             async move {
                 let label = input["label"].as_str().unwrap_or_default().to_string();
@@ -63,7 +63,7 @@ async fn stream_data_from_sender_to_processor() {
     let iii_for_sender = iii.clone();
     iii.register_function(
         "test::data::sender::rs",
-        RegisterFunction::raw(move |input: Value| {
+        RegisterFunction::untyped(move |input: Value| {
             let iii = iii_for_sender.clone();
             async move {
                 let records = input["records"].clone();
@@ -154,7 +154,7 @@ async fn bidirectional_streaming() {
     let iii_for_worker = iii.clone();
     iii.register_function(
         "test::stream::worker::rs",
-        RegisterFunction::raw(move |input: Value| {
+        RegisterFunction::untyped(move |input: Value| {
             let iii = iii_for_worker.clone();
             async move {
                 let refs = iii_sdk::extract_channel_refs(&input);
@@ -238,7 +238,7 @@ async fn bidirectional_streaming() {
     let iii_for_coord = iii.clone();
     iii.register_function(
         "test::stream::coordinator::rs",
-        RegisterFunction::raw(move |input: Value| {
+        RegisterFunction::untyped(move |input: Value| {
             let iii = iii_for_coord.clone();
             async move {
                 let text = input["text"].as_str().unwrap_or_default().to_string();

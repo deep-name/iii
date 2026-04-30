@@ -25,7 +25,7 @@ async fn register_healthcheck_function_and_trigger() {
 
     let fn_ref = iii.register_function(
         "test::healthcheck::rs",
-        RegisterFunction::raw(|_input: Value| async move {
+        RegisterFunction::untyped(|_input: Value| async move {
             Ok(json!({
                 "status_code": 200,
                 "body": {

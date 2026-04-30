@@ -85,7 +85,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::rm",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Remove a file or directory inside a sandbox".to_string()),
     );
 }

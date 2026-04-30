@@ -28,7 +28,7 @@ iii.register_function(
 // Async untyped (closure takes serde_json::Value, no schema introspection).
 iii.register_function(
     "echo",
-    RegisterFunction::raw(|input: Value| async move { Ok(input) }),
+    RegisterFunction::untyped(|input: Value| async move { Ok(input) }),
 );
 
 // HTTP-invoked function (Lambda, Cloudflare Workers, etc.).
@@ -47,14 +47,14 @@ Builder methods (chainable, all consume `self`):
 | `.request_format(schema)` | Override the auto-extracted request schema. |
 | `.response_format(schema)` | Override the auto-extracted response schema. |
 
-If `.request_format` or `.response_format` is set on the builder, that schema wins over any auto-extracted one. With `RegisterFunction::raw` and `RegisterFunction::http` no auto-extraction happens at all, so these setters are the only way to attach a schema.
+If `.request_format` or `.response_format` is set on the builder, that schema wins over any auto-extracted one. With `RegisterFunction::untyped` and `RegisterFunction::http` no auto-extraction happens at all, so these setters are the only way to attach a schema.
 
 ## Removed
 
 | Removed | Replacement |
 | --- | --- |
-| `III::register_function_with(id, handler, options)` | `III::register_function(id, RegisterFunction::raw(handler).description(...))` (or the appropriate constructor) |
-| `register_function((RegisterFunctionMessage, handler))` tuple form | `register_function(id, RegisterFunction::raw(handler))` |
+| `III::register_function_with(id, handler, options)` | `III::register_function(id, RegisterFunction::untyped(handler).description(...))` (or the appropriate constructor) |
+| `register_function((RegisterFunctionMessage, handler))` tuple form | `register_function(id, RegisterFunction::untyped(handler))` |
 | `RegisterFunctionOptions` | Builder methods on `RegisterFunction` |
 | `IntoFunctionRegistration` trait | Single concrete `RegisterFunction` argument |
 | `IntoFunctionHandler` trait + impls | Each registration kind has its own `RegisterFunction::*` constructor |
@@ -68,7 +68,7 @@ Two BREAKING reshapes shipped together:
 
 1. The previous changelog entry already moved `register_function_with` to `(id, handler, options)` to match Node and Python. While doing the consumer migration, the redundancy between `register_function`, `register_function_with`, and the tuple form became evident: three call shapes, one trait machinery, two helper structs (`IIIFn` / `IIIAsyncFn`), and two traits (`IntoFunctionHandler`, `IntoFunctionRegistration`) — all serving roughly the same purpose with different ergonomics.
 
-2. With a single entry point and a single registration type, the surface area becomes one method and one builder. Auto-schema extraction is preserved for typed functions; an explicit `raw` path covers untyped `Value` closures; `http` covers HTTP-invoked functions.
+2. With a single entry point and a single registration type, the surface area becomes one method and one builder. Auto-schema extraction is preserved for typed functions; an explicit `untyped` path covers untyped `Value` closures; `http` covers HTTP-invoked functions.
 
 The cost: every existing call site changes shape. The benefit: documentation, IDE completion, and cross-SDK familiarity all converge on a single pattern.
 
@@ -80,10 +80,10 @@ Replace each registration call with the matching `RegisterFunction::*` construct
 | --- | --- |
 | `register_function(RegisterFunction::new("id", f))` | `register_function("id", RegisterFunction::new(f))` |
 | `register_function(RegisterFunction::new_async("id", f).description("d"))` | `register_function("id", RegisterFunction::new_async(f).description("d"))` |
-| `register_function((RegisterFunctionMessage::with_id("id".into()), handler))` | `register_function("id", RegisterFunction::raw(handler))` |
+| `register_function((RegisterFunctionMessage::with_id("id".into()), handler))` | `register_function("id", RegisterFunction::untyped(handler))` |
 | `register_function_with(RegisterFunctionMessage::with_id("id".into()), http_config)` | `register_function("id", RegisterFunction::http(http_config))` |
 | `register_function_with("id", http_config, RegisterFunctionOptions::default())` | `register_function("id", RegisterFunction::http(http_config))` |
-| `register_function_with("id", handler, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` | `register_function("id", RegisterFunction::raw(handler).description("d"))` |
+| `register_function_with("id", handler, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` | `register_function("id", RegisterFunction::untyped(handler).description("d"))` |
 | `iii_fn(f)` / `iii_async_fn(f)` | `RegisterFunction::new(f)` / `RegisterFunction::new_async(f)` |
 
 `RegisterFunction` is exported from the crate root: `use iii_sdk::RegisterFunction;`. `RegisterFunctionOptions` is no longer exported — drop the import.

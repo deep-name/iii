@@ -100,7 +100,7 @@ register_function(id: impl Into<String>, registration: RegisterFunction) -> Func
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | `impl Into<String>` | Yes | Function identifier. |
-| `registration` | `RegisterFunction` | Yes | Built via [`RegisterFunction::new`], [`RegisterFunction::new_async`], [`RegisterFunction::raw`], or [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`, `.request_format(...)`, `.response_format(...)` as needed. |
+| `registration` | `RegisterFunction` | Yes | Built via [`RegisterFunction::new`], [`RegisterFunction::new_async`], [`RegisterFunction::untyped`], or [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`, `.request_format(...)`, `.response_format(...)` as needed. |
 
 #### Example
 

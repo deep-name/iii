@@ -87,7 +87,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::mv",
-        iii_sdk::RegisterFunction::raw(handler)
+        iii_sdk::RegisterFunction::untyped(handler)
             .description("Move or rename a path inside a sandbox".to_string()),
     );
 }
