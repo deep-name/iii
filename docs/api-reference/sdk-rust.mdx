@@ -100,12 +100,12 @@ register_function(id: impl Into<String>, registration: RegisterFunction) -> Func
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | `impl Into<String>` | Yes | Function identifier. |
-| `registration` | `RegisterFunction` | Yes | Built via [`RegisterFunction::new`], [`RegisterFunction::new_async`], [`RegisterFunction::untyped`], or [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`, `.request_format(...)`, `.response_format(...)` as needed. |
+| `registration` | `RegisterFunction` | Yes | Built via [`RegisterFunction::new`], [`RegisterFunction::new_async`], [`RegisterFunction::new_async`], or [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`, `.request_format(...)`, `.response_format(...)` as needed. |
 
 #### Example
 
 ```rust
-use iii_sdk::{register_worker, InitOptions, RegisterFunction};
+use iii_sdk::{register_worker, InitOptions, IIIError, RegisterFunction};
 use serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
@@ -114,7 +114,7 @@ struct Input { name: String }
 #[derive(Serialize, JsonSchema)]
 struct Output { message: String }
 
-async fn greet(input: Input) -> Result<Output, String> {
+async fn greet(input: Input) -> Result<Output, IIIError> {
     Ok(Output { message: format!("Hello, {}!", input.name) })
 }
 
@@ -170,7 +170,7 @@ let my_trigger = iii.register_trigger_type(
 );
 
 // Compile-time safe: config must be MyConfig, function input must be MyRequest
-my_trigger.register_function("my::handler", |req: MyRequest| -> Result<serde_json::Value, String> {
+my_trigger.register_function("my::handler", |req: MyRequest| -> Result<serde_json::Value, iii_sdk::IIIError> {
     Ok(serde_json::json!({ "data": req.data }))
 });
 my_trigger.register_trigger("my::handler", MyConfig { url: "/hook".into() });

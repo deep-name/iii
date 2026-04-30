@@ -234,7 +234,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::write",
-        iii_sdk::RegisterFunction::untyped(handler)
+        iii_sdk::RegisterFunction::new_async(handler)
             .description("Stream-upload a file into a sandbox".to_string()),
     );
 }

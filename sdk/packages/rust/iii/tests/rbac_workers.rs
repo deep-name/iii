@@ -204,12 +204,14 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::ew::public::echo",
-            RegisterFunction::untyped(|input: Value| async move { Ok(json!({ "echoed": input })) }),
+            RegisterFunction::new_async(
+                |input: Value| async move { Ok(json!({ "echoed": input })) },
+            ),
         ));
 
         refs.push(iii.register_function(
             "test::ew::valid-token-echo",
-            RegisterFunction::untyped(|input: Value| async move {
+            RegisterFunction::new_async(|input: Value| async move {
                 Ok(json!({ "echoed": input, "valid_token": true }))
             }),
         ));
@@ -217,7 +219,7 @@ fn ensure_functions_registered() {
         refs.push(
             iii.register_function(
                 "test::ew::meta-public",
-                RegisterFunction::untyped(|input: Value| async move {
+                RegisterFunction::new_async(|input: Value| async move {
                     Ok(json!({ "meta_echoed": input }))
                 })
                 .metadata(json!({ "ew_public": true })),
@@ -226,7 +228,7 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::ew::private",
-            RegisterFunction::untyped(
+            RegisterFunction::new_async(
                 |_input: Value| async move { Ok(json!({ "private": true })) },
             ),
         ));
@@ -377,7 +379,7 @@ async fn should_deny_function_registration_via_hook() {
 
     iii_client.register_function(
         "denied::blocked-fn",
-        RegisterFunction::untyped(
+        RegisterFunction::new_async(
             |_input: Value| async move { Ok(json!({ "should": "not reach" })) },
         ),
     );
@@ -531,7 +533,7 @@ async fn should_apply_function_registration_prefix_and_strip_on_invocation() {
 
     iii_client.register_function(
         "prefixed-echo",
-        RegisterFunction::untyped(|input: Value| async move { Ok(json!({ "echoed": input })) }),
+        RegisterFunction::new_async(|input: Value| async move { Ok(json!({ "echoed": input })) }),
     );
 
     tokio::time::sleep(Duration::from_millis(1000)).await;

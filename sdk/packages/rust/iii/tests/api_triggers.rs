@@ -32,7 +32,7 @@ async fn get_endpoint() {
 
     iii.register_function(
         "test::api::get::rs",
-        RegisterFunction::untyped(|_input: Value| async move {
+        RegisterFunction::new_async(|_input: Value| async move {
             Ok(json!({
                 "status_code": 200,
                 "body": {"message": "Hello from GET"},
@@ -72,7 +72,7 @@ async fn post_endpoint_with_body() {
 
     iii.register_function(
         "test::api::post::rs",
-        RegisterFunction::untyped(|input: Value| async move {
+        RegisterFunction::new_async(|input: Value| async move {
             let body = input.get("body").cloned().unwrap_or(Value::Null);
             Ok(json!({
                 "status_code": 201,
@@ -115,7 +115,7 @@ async fn path_parameters() {
 
     iii.register_function(
         "test::api::getbyid::rs",
-        RegisterFunction::untyped(|input: Value| async move {
+        RegisterFunction::new_async(|input: Value| async move {
             let id = input
                 .get("path_params")
                 .and_then(|p| p.get("id"))
@@ -161,7 +161,7 @@ async fn query_parameters() {
 
     iii.register_function(
         "test::api::search::rs",
-        RegisterFunction::untyped(|input: Value| async move {
+        RegisterFunction::new_async(|input: Value| async move {
             let qp = input.get("query_params").cloned().unwrap_or(json!({}));
             let q = qp.get("q").and_then(|v| v.as_str()).unwrap_or_default();
             let limit = qp.get("limit").and_then(|v| v.as_str()).unwrap_or_default();
@@ -205,7 +205,7 @@ async fn custom_status_code() {
 
     iii.register_function(
         "test::api::notfound::rs",
-        RegisterFunction::untyped(|_input: Value| async move {
+        RegisterFunction::new_async(|_input: Value| async move {
             Ok(json!({"status_code": 404, "body": {"error": "Not found"}}))
         }),
     );
@@ -245,7 +245,7 @@ async fn content_type_on_api_response_return() {
 
     iii.register_function(
         "test::api::xml::return::rs",
-        RegisterFunction::untyped(move |_input: Value| async move {
+        RegisterFunction::new_async(move |_input: Value| async move {
             Ok(json!({
                 "status_code": 200,
                 "headers": { "Content-Type": "text/xml" },
@@ -302,7 +302,7 @@ async fn download_pdf_streaming() {
     let iii_for_handler = iii.clone();
     iii.register_function(
         "test::api::download::pdf::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let iii = iii_for_handler.clone();
             let pdf_data = pdf_data.clone();
             async move {
@@ -405,7 +405,7 @@ async fn upload_pdf_streaming() {
     let iii_for_handler = iii.clone();
     iii.register_function(
         "test::api::upload::pdf::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let iii = iii_for_handler.clone();
             let received = received_clone.clone();
             async move {
@@ -519,7 +519,7 @@ async fn sse_streaming() {
     let iii_for_handler = iii.clone();
     iii.register_function(
         "test::api::sse::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let iii = iii_for_handler.clone();
             let events = events_clone.clone();
             async move {
@@ -649,7 +649,7 @@ async fn urlencoded_form_data() {
     let iii_for_handler = iii.clone();
     iii.register_function(
         "test::api::form::urlencoded::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let iii = iii_for_handler.clone();
             async move {
                 let refs = iii_sdk::extract_channel_refs(&input);
@@ -799,7 +799,7 @@ async fn multipart_form_data() {
     let iii_for_handler = iii.clone();
     iii.register_function(
         "test::api::form::multipart::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let iii = iii_for_handler.clone();
             async move {
                 let refs = iii_sdk::extract_channel_refs(&input);

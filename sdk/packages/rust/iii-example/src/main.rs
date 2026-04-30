@@ -1,7 +1,7 @@
 use std::{thread::sleep, time::Duration};
 
 use iii_sdk::{
-    InitOptions, OtelConfig, RegisterFunction, TriggerRequest, UpdateBuilder, UpdateOp,
+    IIIError, InitOptions, OtelConfig, RegisterFunction, TriggerRequest, UpdateBuilder, UpdateOp,
     register_worker,
 };
 use serde_json::json;
@@ -14,7 +14,7 @@ struct EchoInput {
     prefix: String,
 }
 
-fn echo_message(input: EchoInput) -> Result<serde_json::Value, String> {
+fn echo_message(input: EchoInput) -> Result<serde_json::Value, IIIError> {
     let mut result = input.message.repeat(input.repeat as usize);
     if input.uppercase {
         result = result.to_uppercase();
@@ -29,7 +29,7 @@ struct DelayEchoInput {
     suffix: String,
 }
 
-async fn delay_echo(input: DelayEchoInput) -> Result<serde_json::Value, String> {
+async fn delay_echo(input: DelayEchoInput) -> Result<serde_json::Value, IIIError> {
     tokio::time::sleep(Duration::from_millis(input.delay_ms)).await;
     Ok(
         json!({ "echo": format!("{}{}", input.message, input.suffix), "delayed_ms": input.delay_ms }),

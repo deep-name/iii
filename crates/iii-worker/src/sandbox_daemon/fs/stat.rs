@@ -97,7 +97,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::stat",
-        iii_sdk::RegisterFunction::untyped(handler)
+        iii_sdk::RegisterFunction::new_async(handler)
             .description("Stat a path inside a sandbox".to_string()),
     );
 }

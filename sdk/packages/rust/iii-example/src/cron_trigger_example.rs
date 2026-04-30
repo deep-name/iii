@@ -1,5 +1,5 @@
 use iii_sdk::builtin_triggers::*;
-use iii_sdk::{III, IIITrigger, RegisterFunction};
+use iii_sdk::{III, IIIError, IIITrigger, RegisterFunction};
 use serde_json::json;
 
 /// Examples using built-in trigger types with the typed `IIITrigger` enum.
@@ -97,7 +97,7 @@ struct CronEvent {
     job_id: String,
 }
 
-fn scheduled_cleanup(input: CronEvent) -> Result<serde_json::Value, String> {
+fn scheduled_cleanup(input: CronEvent) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "cleaned": true, "trigger": input.trigger, "job_id": input.job_id }))
 }
 
@@ -110,19 +110,19 @@ struct StateEvent {
     new_value: serde_json::Value,
 }
 
-fn on_user_updated(input: StateEvent) -> Result<serde_json::Value, String> {
+fn on_user_updated(input: StateEvent) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "event": input.event_type, "scope": input.scope, "key": input.key }))
 }
 
-fn health_check(_input: serde_json::Value) -> Result<serde_json::Value, String> {
+fn health_check(_input: serde_json::Value) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "status": "ok" }))
 }
 
-fn on_order_created(input: serde_json::Value) -> Result<serde_json::Value, String> {
+fn on_order_created(input: serde_json::Value) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "processed": true, "order": input }))
 }
 
-fn process_email(input: serde_json::Value) -> Result<serde_json::Value, String> {
+fn process_email(input: serde_json::Value) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "sent": true, "email": input }))
 }
 
@@ -132,10 +132,10 @@ struct LogEvent {
     body: String,
 }
 
-fn on_error_log(input: LogEvent) -> Result<serde_json::Value, String> {
+fn on_error_log(input: LogEvent) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "alerted": true, "severity": input.severity_text, "message": input.body }))
 }
 
-fn on_chat_message(input: serde_json::Value) -> Result<serde_json::Value, String> {
+fn on_chat_message(input: serde_json::Value) -> Result<serde_json::Value, IIIError> {
     Ok(json!({ "received": true, "event": input }))
 }

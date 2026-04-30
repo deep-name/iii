@@ -93,7 +93,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::chmod",
-        iii_sdk::RegisterFunction::untyped(handler)
+        iii_sdk::RegisterFunction::new_async(handler)
             .description("Change file permissions inside a sandbox".to_string()),
     );
 }

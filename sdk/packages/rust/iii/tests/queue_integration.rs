@@ -29,7 +29,7 @@ async fn enqueue_returns_acknowledgement() {
     let received_clone = received.clone();
     iii.register_function(
         "test::queue::echo::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
@@ -99,7 +99,7 @@ async fn enqueue_fifo_with_valid_group_field() {
     let received_clone = received.clone();
     iii.register_function(
         "test::queue::fifo::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
@@ -178,7 +178,7 @@ async fn void_returns_null_immediately() {
     let count_clone = call_count.clone();
     iii.register_function(
         "test::queue::void::rs",
-        RegisterFunction::untyped(move |_input: Value| {
+        RegisterFunction::new_async(move |_input: Value| {
             let count = count_clone.clone();
             async move {
                 *count.lock().await += 1;
@@ -214,7 +214,7 @@ async fn enqueue_multiple_messages_all_processed() {
     let received_clone = received.clone();
     iii.register_function(
         "test::queue::multi::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
@@ -268,7 +268,7 @@ async fn chained_enqueue() {
     let b_received_clone = b_received.clone();
     iii.register_function(
         "test::queue::chain::b::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let b_received = b_received_clone.clone();
             async move {
                 b_received.lock().await.push(input.clone());
@@ -282,7 +282,7 @@ async fn chained_enqueue() {
     let iii_for_a = iii.clone();
     iii.register_function(
         "test::queue::chain::a::rs",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let a_received = a_received_clone.clone();
             let iii = iii_for_a.clone();
             async move {
@@ -354,7 +354,7 @@ async fn durable_subscriber_receives_published_message() {
     let received_clone = received.clone();
     let fn_ref = iii.register_function(
         function_id.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_clone.clone();
             async move {
                 *received.lock().await = Some(data);
@@ -409,7 +409,7 @@ async fn durable_subscriber_receives_exact_nested_payload() {
     let received_clone = received.clone();
     let fn_ref = iii.register_function(
         function_id.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_clone.clone();
             async move {
                 *received.lock().await = Some(data);
@@ -462,7 +462,7 @@ async fn durable_subscriber_with_queue_config_receives_messages() {
     let received_clone = received.clone();
     let fn_ref = iii.register_function(
         function_id.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_clone.clone();
             async move {
                 *received.lock().await = Some(data);
@@ -526,7 +526,7 @@ async fn durable_subscriber_fanout_to_multiple_subscribers() {
     let received_1_clone = received_1.clone();
     let fn_1 = iii.register_function(
         function_id_1.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_1_clone.clone();
             async move {
                 received.lock().await.push(data);
@@ -537,7 +537,7 @@ async fn durable_subscriber_fanout_to_multiple_subscribers() {
     let received_2_clone = received_2.clone();
     let fn_2 = iii.register_function(
         function_id_2.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_2_clone.clone();
             async move {
                 received.lock().await.push(data);
@@ -617,7 +617,7 @@ async fn durable_subscriber_condition_function_filters_messages() {
     let handler_calls_clone = handler_calls.clone();
     let fn_ref = iii.register_function(
         function_id.clone(),
-        RegisterFunction::untyped(move |_data: Value| {
+        RegisterFunction::new_async(move |_data: Value| {
             let handler_calls = handler_calls_clone.clone();
             async move {
                 *handler_calls.lock().await += 1;
@@ -627,7 +627,7 @@ async fn durable_subscriber_condition_function_filters_messages() {
     );
     let cond_fn = iii.register_function(
         condition_function_id.clone(),
-        RegisterFunction::untyped(move |input: Value| async move {
+        RegisterFunction::new_async(move |input: Value| async move {
             let accept = input
                 .get("accept")
                 .and_then(|v| v.as_bool())

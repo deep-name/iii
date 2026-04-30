@@ -1242,7 +1242,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::health",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_health(&bridge).await) }
         }),
@@ -1251,7 +1251,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::workers",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_workers(&bridge).await) }
         }),
@@ -1260,7 +1260,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::functions",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_functions_list(&bridge, input).await) }
         }),
@@ -1269,7 +1269,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::triggers",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_triggers_list(&bridge, input).await) }
         }),
@@ -1278,7 +1278,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::status",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_status(&bridge).await) }
         }),
@@ -1287,7 +1287,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::trigger_types",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_trigger_types(&bridge).await) }
         }),
@@ -1296,7 +1296,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::alerts_list",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_alerts_list(&bridge).await) }
         }),
@@ -1305,7 +1305,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::sampling_rules",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_sampling_rules(&bridge).await) }
         }),
@@ -1314,7 +1314,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::otel_logs_list",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_otel_logs_list(&bridge, input).await) }
         }),
@@ -1323,7 +1323,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::otel_logs_clear",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_otel_logs_clear(&bridge).await) }
         }),
@@ -1332,7 +1332,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::otel_traces_list",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_otel_traces_list(&bridge, input).await) }
         }),
@@ -1341,7 +1341,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::otel_traces_clear",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_otel_traces_clear(&bridge).await) }
         }),
@@ -1350,7 +1350,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::otel_traces_tree",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_otel_traces_tree(&bridge, input).await) }
         }),
@@ -1359,7 +1359,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::metrics_detailed",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_metrics_detailed(&bridge, input).await) }
         }),
@@ -1368,7 +1368,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::rollups_list",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_rollups_list(&bridge, input).await) }
         }),
@@ -1377,7 +1377,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::state_groups_list",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_state_groups_list(&bridge, input).await) }
         }),
@@ -1386,7 +1386,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::state_group_items",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_state_group_items(&bridge, input).await) }
         }),
@@ -1395,7 +1395,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::state_item_set",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_state_item_set(&bridge, input).await) }
         }),
@@ -1404,7 +1404,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::state_item_delete",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_state_item_delete(&bridge, input).await) }
         }),
@@ -1413,7 +1413,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::adapters",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_adapters(&bridge).await) }
         }),
@@ -1422,7 +1422,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::streams_list",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_streams_list(&bridge).await) }
         }),
@@ -1431,7 +1431,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::flow_config_get",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_flow_config_get(&bridge, input).await) }
         }),
@@ -1440,7 +1440,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::flow_config_save",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_flow_config_save(&bridge, input).await) }
         }),
@@ -1449,7 +1449,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::invoke",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_invoke(&bridge, input).await) }
         }),
@@ -1458,7 +1458,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::cron_trigger",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_cron_trigger(&bridge, input).await) }
         }),
@@ -1468,7 +1468,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::queues_list",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_queues_list(&bridge).await) }
         }),
@@ -1477,7 +1477,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::queue_detail",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_queue_detail(&bridge, input).await) }
         }),
@@ -1486,7 +1486,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::queue_publish",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_queue_publish(&bridge, input).await) }
         }),
@@ -1496,7 +1496,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::dlq_list",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_dlq_list(&bridge).await) }
         }),
@@ -1505,7 +1505,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::dlq_messages",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_dlq_messages(&bridge, input).await) }
         }),
@@ -1514,7 +1514,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::dlq_redrive",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_dlq_redrive(&bridge, input).await) }
         }),
@@ -1523,7 +1523,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::dlq_redrive_message",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_dlq_redrive_message(&bridge, input).await) }
         }),
@@ -1532,7 +1532,7 @@ pub fn register_functions(bridge: &III) {
     let b = bridge.clone();
     bridge.register_function(
         "engine::console::dlq_discard_message",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: Value| {
             let bridge = b.clone();
             async move { Ok(handle_dlq_discard_message(&bridge, input).await) }
         }),

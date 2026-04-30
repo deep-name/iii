@@ -205,23 +205,21 @@ where
 {
     /// Register a sync function whose input type must match
     /// the call request format `R`.
-    pub fn register_function<O, E, F>(&self, id: impl Into<String>, f: F) -> FunctionRef
+    pub fn register_function<O, F>(&self, id: impl Into<String>, f: F) -> FunctionRef
     where
         O: Serialize + schemars::JsonSchema + Send + 'static,
-        E: std::fmt::Display + Send + 'static,
-        F: Fn(R) -> Result<O, E> + Send + Sync + 'static,
+        F: Fn(R) -> Result<O, IIIError> + Send + Sync + 'static,
     {
         self.iii.register_function(id, RegisterFunction::new(f))
     }
 
     /// Register an async function whose input type must match
     /// the call request format `R`.
-    pub fn register_function_async<O, E, F, Fut>(&self, id: impl Into<String>, f: F) -> FunctionRef
+    pub fn register_function_async<O, F, Fut>(&self, id: impl Into<String>, f: F) -> FunctionRef
     where
         O: Serialize + schemars::JsonSchema + Send + 'static,
-        E: std::fmt::Display + Send + 'static,
         F: Fn(R) -> Fut + Send + Sync + 'static,
-        Fut: std::future::Future<Output = Result<O, E>> + Send + 'static,
+        Fut: std::future::Future<Output = Result<O, IIIError>> + Send + 'static,
     {
         self.iii
             .register_function(id, RegisterFunction::new_async(f))
@@ -356,19 +354,24 @@ pub trait IntoSyncHandler<Marker>: Send + Sync + 'static {
     }
 }
 
-// 1-arg sync — deserializes the entire JSON input as T
-impl<F, T, R, E> IntoSyncHandler<(T, R, E)> for F
+// 1-arg sync — deserializes the entire JSON input as T.
+//
+// Error type is fixed to [`IIIError`] (instead of generic `E: Display`) so
+// closures using bare `Ok(...)` infer cleanly without explicit error
+// annotations — required for ergonomic registration of `Fn(Value) -> ...`
+// handlers. Other error types convert via `From<E> for IIIError` (impls
+// for `String` / `&str` / `serde_json::Error` ship with the SDK).
+impl<F, T, R> IntoSyncHandler<(T, R)> for F
 where
-    F: Fn(T) -> Result<R, E> + Send + Sync + 'static,
+    F: Fn(T) -> Result<R, IIIError> + Send + Sync + 'static,
     T: serde::de::DeserializeOwned + schemars::JsonSchema + Send + 'static,
     R: serde::Serialize + schemars::JsonSchema + Send + 'static,
-    E: std::fmt::Display + Send + 'static,
 {
     fn into_handler(self) -> RemoteFunctionHandler {
         Arc::new(move |input: Value| {
             let output = serde_json::from_value::<T>(input)
                 .map_err(|e| IIIError::Handler(e.to_string()))
-                .and_then(|arg| (self)(arg).map_err(|e| IIIError::Handler(e.to_string())))
+                .and_then(&self)
                 .and_then(|val| {
                     serde_json::to_value(&val).map_err(|e| IIIError::Handler(e.to_string()))
                 });
@@ -402,14 +405,17 @@ pub trait IntoAsyncHandler<Marker>: Send + Sync + 'static {
     }
 }
 
-// 1-arg async — deserializes the entire JSON input as T
-impl<F, T, Fut, R, E> IntoAsyncHandler<(T, Fut, R, E)> for F
+// 1-arg async — deserializes the entire JSON input as T.
+//
+// Error type is fixed to [`IIIError`] (see [`IntoSyncHandler`] for the
+// rationale). Use `From<E> for IIIError` to lift custom error types,
+// or `?` propagation in the closure body.
+impl<F, T, Fut, R> IntoAsyncHandler<(T, Fut, R)> for F
 where
     F: Fn(T) -> Fut + Send + Sync + 'static,
     T: serde::de::DeserializeOwned + schemars::JsonSchema + Send + 'static,
-    Fut: std::future::Future<Output = Result<R, E>> + Send + 'static,
+    Fut: std::future::Future<Output = Result<R, IIIError>> + Send + 'static,
     R: serde::Serialize + schemars::JsonSchema + Send + 'static,
-    E: std::fmt::Display + Send + 'static,
 {
     fn into_handler(self) -> RemoteFunctionHandler {
         Arc::new(
@@ -420,12 +426,10 @@ where
                     Ok(arg) => {
                         let fut = (self)(arg);
                         Box::pin(async move {
-                            fut.await
-                                .map_err(|e| IIIError::Handler(e.to_string()))
-                                .and_then(|val| {
-                                    serde_json::to_value(&val)
-                                        .map_err(|e| IIIError::Handler(e.to_string()))
-                                })
+                            fut.await.and_then(|val| {
+                                serde_json::to_value(&val)
+                                    .map_err(|e| IIIError::Handler(e.to_string()))
+                            })
                         })
                     }
                     Err(e) => Box::pin(async move { Err(IIIError::Handler(e.to_string())) }),
@@ -465,11 +469,10 @@ fn empty_message() -> RegisterFunctionMessage {
 /// and optional metadata.
 ///
 /// Constructors:
-/// - [`RegisterFunction::new`] — sync function with auto-extracted schemas.
-/// - [`RegisterFunction::new_async`] — async function with auto-extracted schemas.
-/// - [`RegisterFunction::untyped`] — async closure taking [`Value`]; no schema
-///   introspection (use [`RegisterFunction::request_format`] /
-///   [`RegisterFunction::response_format`] to provide schemas).
+/// - [`RegisterFunction::new`] — sync function. Accepts both typed handlers
+///   (schemas auto-extracted via `schemars`) and `Fn(Value) -> Result<Value, IIIError>`
+///   closures (permissive `AnyValue` schema, since `Value: JsonSchema`).
+/// - [`RegisterFunction::new_async`] — async equivalent of `new`.
 /// - [`RegisterFunction::http`] — function invoked over HTTP (Lambda,
 ///   Cloudflare Workers, etc.).
 ///
@@ -515,24 +518,6 @@ impl RegisterFunction {
         Self {
             message,
             handler: Some(f.into_handler()),
-        }
-    }
-
-    /// Create a registration for an **async untyped** handler taking
-    /// [`serde_json::Value`].
-    ///
-    /// No schema introspection is performed — set schemas explicitly with
-    /// [`request_format`](Self::request_format) /
-    /// [`response_format`](Self::response_format) if needed.
-    pub fn untyped<F, Fut>(f: F) -> Self
-    where
-        F: Fn(Value) -> Fut + Send + Sync + 'static,
-        Fut: std::future::Future<Output = Result<Value, IIIError>> + Send + 'static,
-    {
-        let handler: RemoteFunctionHandler = Arc::new(move |input: Value| Box::pin(f(input)));
-        Self {
-            message: empty_message(),
-            handler: Some(handler),
         }
     }
 
@@ -783,7 +768,7 @@ impl III {
     /// # Arguments
     /// * `id` — Function identifier.
     /// * `registration` — Built via [`RegisterFunction::new`],
-    ///   [`RegisterFunction::new_async`], [`RegisterFunction::untyped`], or
+    ///   [`RegisterFunction::new_async`], [`RegisterFunction::new_async`], or
     ///   [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`,
     ///   `.request_format(...)`, `.response_format(...)` as needed.
     ///
@@ -792,7 +777,7 @@ impl III {
     ///
     /// # Examples
     /// ```rust,no_run
-    /// use iii_sdk::{register_worker, InitOptions, RegisterFunction};
+    /// use iii_sdk::{register_worker, InitOptions, IIIError, RegisterFunction};
     /// use serde::{Deserialize, Serialize};
     /// use schemars::JsonSchema;
     ///
@@ -801,7 +786,7 @@ impl III {
     /// #[derive(Serialize, JsonSchema)]
     /// struct Output { message: String }
     ///
-    /// async fn greet(input: Input) -> Result<Output, String> {
+    /// async fn greet(input: Input) -> Result<Output, IIIError> {
     ///     Ok(Output { message: format!("Hello, {}!", input.name) })
     /// }
     ///
@@ -819,7 +804,7 @@ impl III {
     /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
     /// iii.register_function(
     ///     "echo",
-    ///     RegisterFunction::untyped(|input: Value| async move { Ok(json!({"echo": input})) }),
+    ///     RegisterFunction::new_async(|input: Value| async move { Ok(json!({"echo": input})) }),
     /// );
     /// ```
     ///
@@ -883,7 +868,7 @@ impl III {
     /// );
     ///
     /// // Compile-time safe: config must be MyConfig, function input must be MyRequest
-    /// my_trigger.register_function("my::handler", |req: MyRequest| -> Result<serde_json::Value, String> {
+    /// my_trigger.register_function("my::handler", |req: MyRequest| -> Result<serde_json::Value, iii_sdk::IIIError> {
     ///     Ok(serde_json::json!({ "data": req.data }))
     /// });
     /// my_trigger.register_trigger("my::handler", MyConfig { url: "/hook".into() });
@@ -1724,7 +1709,7 @@ mod tests {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let func_ref = iii.register_function(
             "test::reshaped::ordering",
-            RegisterFunction::untyped(|input: Value| async move { Ok(input) })
+            RegisterFunction::new_async(|input: Value| async move { Ok(input) })
                 .description("reshaped"),
         );
         assert_eq!(func_ref.id, "test::reshaped::ordering");
@@ -1772,7 +1757,7 @@ mod tests {
         struct Out {
             message: String,
         }
-        async fn greet(input: In) -> Result<Out, String> {
+        async fn greet(input: In) -> Result<Out, IIIError> {
             Ok(Out {
                 message: format!("Hello, {}!", input.name),
             })
@@ -1794,7 +1779,7 @@ mod tests {
         struct In {
             name: String,
         }
-        async fn handler(input: In) -> Result<String, String> {
+        async fn handler(input: In) -> Result<String, IIIError> {
             Ok(input.name)
         }
 
@@ -1808,7 +1793,7 @@ mod tests {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let _func_ref = iii.register_function(
             "test::untyped",
-            RegisterFunction::untyped(|input: Value| async move { Ok(json!({ "echo": input })) }),
+            RegisterFunction::new_async(|input: Value| async move { Ok(json!({ "echo": input })) }),
         );
         let handler = {
             let funcs = iii.inner.functions.lock().unwrap();

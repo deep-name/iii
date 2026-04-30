@@ -380,7 +380,7 @@ async fn reactive_state() {
 
     let fn_ref = iii.register_function(
         "test::state::rs::updated",
-        RegisterFunction::untyped(move |event: Value| {
+        RegisterFunction::new_async(move |event: Value| {
             let reactive_data = reactive_data_clone.clone();
             async move {
                 if event.get("type").and_then(|v| v.as_str()) == Some("state")

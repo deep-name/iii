@@ -34,7 +34,7 @@ async fn subscribe_and_receive_published_messages() {
     let fn_id = format!("test::pubsub::rs::subscriber::{topic}");
     let fn_ref = iii.register_function(
         fn_id.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_clone.clone();
             let tx = tx.clone();
             async move {
@@ -100,7 +100,7 @@ async fn topic_isolation() {
 
     let fn_a = iii.register_function(
         fn_id_a.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_a_clone.clone();
             let tx = tx_a.clone();
             async move {
@@ -115,7 +115,7 @@ async fn topic_isolation() {
 
     let fn_b = iii.register_function(
         fn_id_b.clone(),
-        RegisterFunction::untyped(move |data: Value| {
+        RegisterFunction::new_async(move |data: Value| {
             let received = received_b_clone.clone();
             async move {
                 received.lock().await.push(data);

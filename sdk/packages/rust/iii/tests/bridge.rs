@@ -45,7 +45,7 @@ async fn register_and_invoke_function() {
 
     let fn_ref = iii.register_function(
         "test::bridge::rs::echo",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
@@ -83,7 +83,7 @@ async fn invoke_function_fire_and_forget() {
 
     let fn_ref = iii.register_function(
         "test::bridge::rs::receiver",
-        RegisterFunction::untyped(move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let received = received_clone.clone();
             let tx = tx.clone();
             async move {
@@ -126,11 +126,11 @@ async fn list_registered_functions() {
 
     let fn1 = iii.register_function(
         "test::bridge::rs::list::func1",
-        RegisterFunction::untyped(|_: Value| async move { Ok(json!({})) }),
+        RegisterFunction::new_async(|_: Value| async move { Ok(json!({})) }),
     );
     let fn2 = iii.register_function(
         "test::bridge::rs::list::func2",
-        RegisterFunction::untyped(|_: Value| async move { Ok(json!({})) }),
+        RegisterFunction::new_async(|_: Value| async move { Ok(json!({})) }),
     );
 
     common::settle().await;

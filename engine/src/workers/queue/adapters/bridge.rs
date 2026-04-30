@@ -181,7 +181,7 @@ impl QueueAdapter for BridgeAdapter {
         let topic_owned = topic.to_string();
         self.bridge.register_function(
             handler_path.clone(),
-            iii_sdk::RegisterFunction::untyped(move |data: Value| {
+            iii_sdk::RegisterFunction::new_async(move |data: Value| {
                 let engine = Arc::clone(&engine);
                 let function_id = function_id_owned.clone();
                 let condition_function_id = condition_function_id_owned.clone();

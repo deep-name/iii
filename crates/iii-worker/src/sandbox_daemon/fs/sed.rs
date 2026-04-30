@@ -150,7 +150,7 @@ pub(super) fn register(
     };
     let _ = iii.register_function(
         "sandbox::fs::sed",
-        iii_sdk::RegisterFunction::untyped(handler)
+        iii_sdk::RegisterFunction::new_async(handler)
             .description("Search-and-replace in files inside a sandbox".to_string()),
     );
 }

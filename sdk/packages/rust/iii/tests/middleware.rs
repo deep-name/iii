@@ -21,7 +21,7 @@ async fn middleware_continue_to_handler() {
 
     iii.register_function(
         "test::mw::continue::rs",
-        RegisterFunction::untyped(move |_input: Value| {
+        RegisterFunction::new_async(move |_input: Value| {
             let flag = mw_called_clone.clone();
             async move {
                 *flag.lock().await = true;
@@ -32,7 +32,7 @@ async fn middleware_continue_to_handler() {
 
     iii.register_function(
         "test::mw::continue::handler::rs",
-        RegisterFunction::untyped(|_input: Value| async move {
+        RegisterFunction::new_async(|_input: Value| async move {
             Ok(json!({
                 "status_code": 200,
                 "body": {"message": "handler reached"},
@@ -75,7 +75,7 @@ async fn middleware_short_circuit() {
 
     iii.register_function(
         "test::mw::block::rs",
-        RegisterFunction::untyped(|_input: Value| async move {
+        RegisterFunction::new_async(|_input: Value| async move {
             Ok(json!({
                 "action": "respond",
                 "response": {
@@ -88,7 +88,7 @@ async fn middleware_short_circuit() {
 
     iii.register_function(
         "test::mw::block::handler::rs",
-        RegisterFunction::untyped(move |_input: Value| {
+        RegisterFunction::new_async(move |_input: Value| {
             let flag = handler_called_clone.clone();
             async move {
                 *flag.lock().await = true;
@@ -137,7 +137,7 @@ async fn multiple_middleware_ordering() {
 
     iii.register_function(
         "test::mw::order::first::rs",
-        RegisterFunction::untyped(move |_input: Value| {
+        RegisterFunction::new_async(move |_input: Value| {
             let order = order1.clone();
             async move {
                 order.lock().await.push("mw1".to_string());
@@ -148,7 +148,7 @@ async fn multiple_middleware_ordering() {
 
     iii.register_function(
         "test::mw::order::second::rs",
-        RegisterFunction::untyped(move |_input: Value| {
+        RegisterFunction::new_async(move |_input: Value| {
             let order = order2.clone();
             async move {
                 order.lock().await.push("mw2".to_string());
@@ -159,7 +159,7 @@ async fn multiple_middleware_ordering() {
 
     iii.register_function(
         "test::mw::order::handler::rs",
-        RegisterFunction::untyped(move |_input: Value| {
+        RegisterFunction::new_async(move |_input: Value| {
             let order = order3.clone();
             async move {
                 order.lock().await.push("handler".to_string());
@@ -206,7 +206,7 @@ async fn no_middleware_regression() {
 
     iii.register_function(
         "test::mw::none::rs",
-        RegisterFunction::untyped(|_input: Value| async move {
+        RegisterFunction::new_async(|_input: Value| async move {
             Ok(json!({
                 "status_code": 200,
                 "body": {"message": "no middleware"},

@@ -11,7 +11,7 @@ pub fn setup(iii: &III) {
     let get_client = client.clone();
     iii.register_function(
         "api::get::http::rust::fetch",
-        RegisterFunction::untyped(move |_input| {
+        RegisterFunction::new_async(move |_input: serde_json::Value| {
             let client = get_client.clone();
             let logger = Logger::new();
 
@@ -58,7 +58,7 @@ pub fn setup(iii: &III) {
     let post_client = client.clone();
     iii.register_function(
         "api::post::http::rust::fetch",
-        RegisterFunction::untyped(move |input| {
+        RegisterFunction::new_async(move |input: serde_json::Value| {
             let client = post_client.clone();
             async move {
                 let logger = Logger::new();
