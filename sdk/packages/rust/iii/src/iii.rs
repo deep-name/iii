@@ -35,8 +35,8 @@ use crate::{
     channels::{ChannelReader, ChannelWriter, StreamChannelRef},
     error::IIIError,
     protocol::{
-        ErrorBody, HttpInvocationConfig, Message, RegisterFunctionMessage,
-        RegisterFunctionOptions, RegisterServiceMessage, RegisterTriggerInput,
+        ErrorBody, HttpInvocationConfig, Message, RegisterFunctionMessage, RegisterServiceMessage,
+        RegisterTriggerInput,
         RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction, TriggerRequest,
         UnregisterTriggerMessage, UnregisterTriggerTypeMessage,
     },
@@ -212,7 +212,7 @@ where
         E: std::fmt::Display + Send + 'static,
         F: Fn(R) -> Result<O, E> + Send + Sync + 'static,
     {
-        self.iii.register_function(RegisterFunction::new(id, f))
+        self.iii.register_function(id, RegisterFunction::new(f))
     }
 
     /// Register an async function whose input type must match
@@ -225,7 +225,7 @@ where
         Fut: std::future::Future<Output = Result<O, E>> + Send + 'static,
     {
         self.iii
-            .register_function(RegisterFunction::new_async(id, f))
+            .register_function(id, RegisterFunction::new_async(f))
     }
 }
 
@@ -335,65 +335,6 @@ impl FunctionRef {
     }
 }
 
-pub trait IntoFunctionHandler {
-    fn into_parts(self, message: &mut RegisterFunctionMessage) -> Option<RemoteFunctionHandler>;
-}
-
-/// Trait for types that can be passed to [`III::register_function`].
-///
-/// Implemented for:
-/// - [`RegisterFunction`] — the builder API (recommended)
-/// - `(RegisterFunctionMessage, H)` — the legacy tuple API
-pub trait IntoFunctionRegistration {
-    fn into_registration(self) -> (RegisterFunctionMessage, Option<RemoteFunctionHandler>);
-}
-
-impl IntoFunctionRegistration for RegisterFunction {
-    fn into_registration(self) -> (RegisterFunctionMessage, Option<RemoteFunctionHandler>) {
-        (self.message, Some(self.handler))
-    }
-}
-
-impl<H: IntoFunctionHandler> IntoFunctionRegistration for (RegisterFunctionMessage, H) {
-    fn into_registration(self) -> (RegisterFunctionMessage, Option<RemoteFunctionHandler>) {
-        let (mut message, handler) = self;
-        let handler = handler.into_parts(&mut message);
-        (message, handler)
-    }
-}
-
-impl IntoFunctionHandler for HttpInvocationConfig {
-    fn into_parts(self, message: &mut RegisterFunctionMessage) -> Option<RemoteFunctionHandler> {
-        message.invocation = Some(self);
-        None
-    }
-}
-
-impl<F, Fut> IntoFunctionHandler for F
-where
-    F: Fn(Value) -> Fut + Send + Sync + 'static,
-    Fut: std::future::Future<Output = Result<Value, IIIError>> + Send + 'static,
-{
-    fn into_parts(self, _message: &mut RegisterFunctionMessage) -> Option<RemoteFunctionHandler> {
-        Some(Arc::new(move |input: Value| Box::pin(self(input))))
-    }
-}
-
-// =============================================================================
-// iii_fn — sync function wrapper
-// =============================================================================
-
-/// Wrapper for registering sync functions as III handlers via [`iii_fn`].
-///
-/// Created by [`iii_fn`]. Stores a pre-erased handler so that a single
-/// [`IntoFunctionHandler`] impl covers all supported arities.
-pub struct IIIFn<F = ()> {
-    handler: RemoteFunctionHandler,
-    request_format: Option<Value>,
-    response_format: Option<Value>,
-    _marker: std::marker::PhantomData<F>,
-}
-
 fn json_schema_for<T: schemars::JsonSchema>() -> Option<Value> {
     serde_json::to_value(
         schemars::r#gen::SchemaSettings::draft07()
@@ -445,54 +386,9 @@ where
     }
 }
 
-/// Wraps a **sync** function into an III-compatible handler.
-///
-/// The function must take a single argument implementing
-/// [`serde::de::DeserializeOwned`] and return `Result<R, E>`
-/// where `R: Serialize` and `E: Display`.
-///
-/// The entire JSON input is deserialized as the argument type.
-/// Use a `#[derive(Deserialize)]` struct for named JSON keys.
-///
-/// For async functions, use [`iii_async_fn`] instead.
-pub fn iii_fn<F, M>(f: F) -> IIIFn<F>
-where
-    F: IntoSyncHandler<M>,
-{
-    IIIFn {
-        request_format: F::request_format(),
-        response_format: F::response_format(),
-        handler: f.into_handler(),
-        _marker: std::marker::PhantomData,
-    }
-}
-
-impl<F> IntoFunctionHandler for IIIFn<F> {
-    fn into_parts(self, message: &mut RegisterFunctionMessage) -> Option<RemoteFunctionHandler> {
-        if message.request_format.is_none() {
-            message.request_format = self.request_format;
-        }
-        if message.response_format.is_none() {
-            message.response_format = self.response_format;
-        }
-        Some(self.handler)
-    }
-}
-
 // =============================================================================
-// iii_async_fn — async function wrapper
+// IntoAsyncHandler — async function schema-extraction trait
 // =============================================================================
-
-/// Wrapper for registering async functions as III handlers via [`iii_async_fn`].
-///
-/// Created by [`iii_async_fn`]. Stores a pre-erased handler so that a single
-/// [`IntoFunctionHandler`] impl covers all supported arities.
-pub struct IIIAsyncFn<F = ()> {
-    handler: RemoteFunctionHandler,
-    request_format: Option<Value>,
-    response_format: Option<Value>,
-    _marker: std::marker::PhantomData<F>,
-}
 
 /// Helper trait used internally to convert an async function into a
 /// [`RemoteFunctionHandler`].
@@ -548,82 +444,108 @@ where
     }
 }
 
-/// Wraps an **async** function into an III-compatible handler.
-///
-/// The function must take a single argument implementing
-/// [`serde::de::DeserializeOwned`] and return
-/// `impl Future<Output = Result<R, E>>` where `R: Serialize` and `E: Display`.
-pub fn iii_async_fn<F, M>(f: F) -> IIIAsyncFn<F>
-where
-    F: IntoAsyncHandler<M>,
-{
-    IIIAsyncFn {
-        request_format: F::request_format(),
-        response_format: F::response_format(),
-        handler: f.into_handler(),
-        _marker: std::marker::PhantomData,
+// =============================================================================
+// RegisterFunction — single registration builder
+// =============================================================================
+
+fn empty_message() -> RegisterFunctionMessage {
+    RegisterFunctionMessage {
+        id: String::new(),
+        description: None,
+        request_format: None,
+        response_format: None,
+        metadata: None,
+        invocation: None,
     }
 }
 
-impl<F> IntoFunctionHandler for IIIAsyncFn<F> {
-    fn into_parts(self, message: &mut RegisterFunctionMessage) -> Option<RemoteFunctionHandler> {
-        if message.request_format.is_none() {
-            message.request_format = self.request_format;
-        }
-        if message.response_format.is_none() {
-            message.response_format = self.response_format;
-        }
-        Some(self.handler)
-    }
-}
-
-// =============================================================================
-// RegisterFunction — one-step registration builder
-// =============================================================================
-
-/// One-step function registration combining ID, handler, and auto-generated schemas.
+/// Function registration builder.
 ///
-/// Use [`RegisterFunction::new`] for sync functions or [`RegisterFunction::new_async`]
-/// for async functions, then register with [`III::register`].
+/// The function ID is supplied separately at registration time via
+/// [`III::register_function`] — `RegisterFunction` only carries the handler
+/// and optional metadata.
+///
+/// Constructors:
+/// - [`RegisterFunction::new`] — sync function with auto-extracted schemas.
+/// - [`RegisterFunction::new_async`] — async function with auto-extracted schemas.
+/// - [`RegisterFunction::raw`] — async closure taking [`Value`]; no schema
+///   introspection (use [`RegisterFunction::request_format`] /
+///   [`RegisterFunction::response_format`] to provide schemas).
+/// - [`RegisterFunction::http`] — function invoked over HTTP (Lambda,
+///   Cloudflare Workers, etc.).
+///
+/// Builder methods (all consume `self`):
+/// - [`description`](Self::description)
+/// - [`metadata`](Self::metadata)
+/// - [`request_format`](Self::request_format) — overrides any auto-extracted schema.
+/// - [`response_format`](Self::response_format) — overrides any auto-extracted schema.
 pub struct RegisterFunction {
     message: RegisterFunctionMessage,
-    handler: RemoteFunctionHandler,
+    handler: Option<RemoteFunctionHandler>,
 }
 
 impl RegisterFunction {
-    /// Create a registration for a **sync** function.
-    pub fn new<F, M>(id: impl Into<String>, f: F) -> Self
+    /// Create a registration for a **sync** typed function.
+    ///
+    /// Auto-extracts `request_format` / `response_format` from the function's
+    /// argument and return types via `schemars`.
+    pub fn new<F, M>(f: F) -> Self
     where
         F: IntoSyncHandler<M>,
     {
+        let mut message = empty_message();
+        message.request_format = F::request_format();
+        message.response_format = F::response_format();
         Self {
-            message: RegisterFunctionMessage {
-                id: id.into(),
-                description: None,
-                request_format: F::request_format(),
-                response_format: F::response_format(),
-                metadata: None,
-                invocation: None,
-            },
-            handler: f.into_handler(),
+            message,
+            handler: Some(f.into_handler()),
         }
     }
 
-    /// Create a registration for an **async** function.
-    pub fn new_async<F, M>(id: impl Into<String>, f: F) -> Self
+    /// Create a registration for an **async** typed function.
+    ///
+    /// Auto-extracts `request_format` / `response_format` from the function's
+    /// argument and return types via `schemars`.
+    pub fn new_async<F, M>(f: F) -> Self
     where
         F: IntoAsyncHandler<M>,
     {
+        let mut message = empty_message();
+        message.request_format = F::request_format();
+        message.response_format = F::response_format();
         Self {
-            message: RegisterFunctionMessage {
-                id: id.into(),
-                description: None,
-                request_format: F::request_format(),
-                response_format: F::response_format(),
-                metadata: None,
-                invocation: None,
-            },
-            handler: f.into_handler(),
+            message,
+            handler: Some(f.into_handler()),
+        }
+    }
+
+    /// Create a registration for an **async untyped** handler taking
+    /// [`serde_json::Value`].
+    ///
+    /// No schema introspection is performed — set schemas explicitly with
+    /// [`request_format`](Self::request_format) /
+    /// [`response_format`](Self::response_format) if needed.
+    pub fn raw<F, Fut>(f: F) -> Self
+    where
+        F: Fn(Value) -> Fut + Send + Sync + 'static,
+        Fut: std::future::Future<Output = Result<Value, IIIError>> + Send + 'static,
+    {
+        let handler: RemoteFunctionHandler =
+            Arc::new(move |input: Value| Box::pin(f(input)));
+        Self {
+            message: empty_message(),
+            handler: Some(handler),
+        }
+    }
+
+    /// Create a registration for an **HTTP-invoked** function (Lambda,
+    /// Cloudflare Workers, etc.). No local handler runs.
+    pub fn http(config: HttpInvocationConfig) -> Self {
+        let mut message = empty_message();
+        message.invocation = Some(config);
+        Self {
+            message,
+            handler: None,
         }
     }
 
@@ -639,14 +561,20 @@ impl RegisterFunction {
         self
     }
 
-    /// Get the auto-generated request format.
-    pub fn request_format(&self) -> Option<&Value> {
-        self.message.request_format.as_ref()
+    /// Set the request format schema. Overrides any auto-extracted schema.
+    pub fn request_format(mut self, schema: Value) -> Self {
+        self.message.request_format = Some(schema);
+        self
     }
 
-    /// Get the auto-generated response format.
-    pub fn response_format(&self) -> Option<&Value> {
-        self.message.response_format.as_ref()
+    /// Set the response format schema. Overrides any auto-extracted schema.
+    pub fn response_format(mut self, schema: Value) -> Self {
+        self.message.response_format = Some(schema);
+        self
+    }
+
+    pub(crate) fn into_parts(self) -> (RegisterFunctionMessage, Option<RemoteFunctionHandler>) {
+        (self.message, self.handler)
     }
 }
 
@@ -851,12 +779,15 @@ impl III {
 
     /// Register a function with the engine.
     ///
-    /// Pass a closure/async fn for local execution, or an [`HttpInvocationConfig`]
-    /// for HTTP-invoked functions (Lambda, Cloudflare Workers, etc.).
+    /// Argument order matches the Node and Python SDKs:
+    /// `(id, registration)`.
     ///
     /// # Arguments
-    /// * `message` - Function registration message with id and optional metadata.
-    /// * `handler` - Async handler or HTTP invocation config.
+    /// * `id` — Function identifier.
+    /// * `registration` — Built via [`RegisterFunction::new`],
+    ///   [`RegisterFunction::new_async`], [`RegisterFunction::raw`], or
+    ///   [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`,
+    ///   `.request_format(...)`, `.response_format(...)` as needed.
     ///
     /// # Panics
     /// Panics if `id` is empty or already registered.
@@ -864,70 +795,57 @@ impl III {
     /// # Examples
     /// ```rust,no_run
     /// use iii_sdk::{register_worker, InitOptions, RegisterFunction};
-    /// use serde::Deserialize;
+    /// use serde::{Deserialize, Serialize};
     /// use schemars::JsonSchema;
     ///
     /// #[derive(Deserialize, JsonSchema)]
     /// struct Input { name: String }
-    /// fn greet(input: Input) -> Result<String, String> {
-    ///     Ok(format!("Hello, {}!", input.name))
+    /// #[derive(Serialize, JsonSchema)]
+    /// struct Output { message: String }
+    ///
+    /// async fn greet(input: Input) -> Result<Output, String> {
+    ///     Ok(Output { message: format!("Hello, {}!", input.name) })
     /// }
     ///
     /// let iii = register_worker("ws://localhost:49134", InitOptions::default());
-    /// iii.register_function(RegisterFunction::new("greet", greet));
-    /// ```
-    ///
-    /// Also accepts a `(id, handler, options)` form via [`register_function_with`](III::register_function_with):
-    /// ```rust,no_run
-    /// # use iii_sdk::{register_worker, InitOptions, RegisterFunctionOptions};
-    /// # use serde_json::{json, Value};
-    /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
-    /// iii.register_function_with(
-    ///     "echo",
-    ///     |input: Value| async move { Ok(json!({"echo": input})) },
-    ///     RegisterFunctionOptions {
-    ///         description: Some("echoes the input".to_string()),
-    ///         ..Default::default()
-    ///     },
+    /// iii.register_function(
+    ///     "greet",
+    ///     RegisterFunction::new_async(greet).description("Greets a user"),
     /// );
     /// ```
-    pub fn register_function<R: IntoFunctionRegistration>(&self, registration: R) -> FunctionRef {
-        let (message, handler) = registration.into_registration();
-        self.register_function_inner(message, handler)
-    }
-
-    /// Register a function with full options.
     ///
-    /// This is the "full options" entry point. For the happy-path of
-    /// registering a closure with no extra options, prefer
-    /// [`register_function`](Self::register_function).
+    /// Untyped handler taking `serde_json::Value`:
+    /// ```rust,no_run
+    /// # use iii_sdk::{register_worker, InitOptions, RegisterFunction};
+    /// # use serde_json::{json, Value};
+    /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
+    /// iii.register_function(
+    ///     "echo",
+    ///     RegisterFunction::raw(|input: Value| async move { Ok(json!({"echo": input})) }),
+    /// );
+    /// ```
     ///
-    /// Argument order matches the Node and Python SDKs:
-    /// `(id, handler_or_invocation, options)`.
-    ///
-    /// # Arguments
-    /// * `id` — Function identifier.
-    /// * `handler` — Async closure or [`HttpInvocationConfig`].
-    /// * `options` — Optional metadata. Use [`RegisterFunctionOptions::default()`]
-    ///   when no options are needed.
-    ///
-    /// # Panics
-    /// Panics if `id` is empty or already registered.
-    pub fn register_function_with<H: IntoFunctionHandler>(
+    /// HTTP-invoked function:
+    /// ```rust,no_run
+    /// # use iii_sdk::{register_worker, InitOptions, RegisterFunction, HttpInvocationConfig, HttpMethod};
+    /// # use std::collections::HashMap;
+    /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
+    /// let config = HttpInvocationConfig {
+    ///     url: "https://example.com/invoke".into(),
+    ///     method: HttpMethod::Post,
+    ///     timeout_ms: Some(30_000),
+    ///     headers: HashMap::new(),
+    ///     auth: None,
+    /// };
+    /// iii.register_function("ext::lambda", RegisterFunction::http(config));
+    /// ```
+    pub fn register_function(
         &self,
         id: impl Into<String>,
-        handler: H,
-        options: RegisterFunctionOptions,
+        registration: RegisterFunction,
     ) -> FunctionRef {
-        let mut message = RegisterFunctionMessage {
-            id: id.into(),
-            description: options.description,
-            request_format: options.request_format,
-            response_format: options.response_format,
-            metadata: options.metadata,
-            invocation: None,
-        };
-        let handler = handler.into_parts(&mut message);
+        let (mut message, handler) = registration.into_parts();
+        message.id = id.into();
         self.register_function_inner(message, handler)
     }
 
@@ -1778,11 +1696,7 @@ mod tests {
             auth: None,
         };
 
-        let func_ref = iii.register_function_with(
-            "external::my_lambda",
-            config,
-            RegisterFunctionOptions::default(),
-        );
+        let func_ref = iii.register_function("external::my_lambda", RegisterFunction::http(config));
 
         assert_eq!(func_ref.id, "external::my_lambda");
         assert_eq!(iii.inner.functions.lock().unwrap().len(), 1);
@@ -1804,23 +1718,16 @@ mod tests {
             auth: None,
         };
 
-        iii.register_function_with(
-            "",
-            config,
-            RegisterFunctionOptions::default(),
-        );
+        iii.register_function("", RegisterFunction::http(config));
     }
 
     #[tokio::test]
-    async fn register_function_with_takes_id_handler_options_in_that_order() {
+    async fn register_function_takes_id_then_builder() {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
-        let func_ref = iii.register_function_with(
+        let func_ref = iii.register_function(
             "test::reshaped::ordering",
-            |input: Value| async move { Ok(input) },
-            RegisterFunctionOptions {
-                description: Some("reshaped".to_string()),
-                ..Default::default()
-            },
+            RegisterFunction::raw(|input: Value| async move { Ok(input) })
+                .description("reshaped"),
         );
         assert_eq!(func_ref.id, "test::reshaped::ordering");
 
@@ -1832,7 +1739,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn register_function_with_accepts_http_invocation_config() {
+    async fn register_function_http_variant_has_no_handler() {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let config = HttpInvocationConfig {
             url: "https://example.com/invoke".to_string(),
@@ -1842,17 +1749,76 @@ mod tests {
             auth: None,
         };
 
-        let func_ref = iii.register_function_with(
-            "external::reshaped",
-            config,
-            RegisterFunctionOptions::default(),
-        );
+        let func_ref =
+            iii.register_function("external::reshaped", RegisterFunction::http(config));
 
         assert_eq!(func_ref.id, "external::reshaped");
         let funcs = iii.inner.functions.lock().unwrap();
         let stored = funcs.get("external::reshaped").expect("stored");
-        assert!(stored.handler.is_none(), "handler should be None for HTTP invocation");
-        assert!(stored.message.invocation.is_some(), "invocation should be set");
+        assert!(
+            stored.handler.is_none(),
+            "handler should be None for HTTP invocation"
+        );
+        assert!(
+            stored.message.invocation.is_some(),
+            "invocation should be set"
+        );
+    }
+
+    #[tokio::test]
+    async fn register_function_new_async_extracts_schemas() {
+        #[derive(serde::Deserialize, schemars::JsonSchema)]
+        struct In {
+            name: String,
+        }
+        #[derive(serde::Serialize, schemars::JsonSchema)]
+        struct Out {
+            message: String,
+        }
+        async fn greet(input: In) -> Result<Out, String> {
+            Ok(Out {
+                message: format!("Hello, {}!", input.name),
+            })
+        }
+
+        let reg = RegisterFunction::new_async(greet);
+        assert!(reg.message.request_format.is_some());
+        assert!(reg.message.response_format.is_some());
+        assert_eq!(reg.message.request_format.as_ref().unwrap()["title"], "In");
+        assert_eq!(reg.message.response_format.as_ref().unwrap()["title"], "Out");
+    }
+
+    #[tokio::test]
+    async fn register_function_request_format_setter_overrides_auto_extraction() {
+        #[derive(serde::Deserialize, schemars::JsonSchema)]
+        struct In {
+            name: String,
+        }
+        async fn handler(input: In) -> Result<String, String> {
+            Ok(input.name)
+        }
+
+        let custom = json!({"custom": true});
+        let reg = RegisterFunction::new_async(handler).request_format(custom.clone());
+        assert_eq!(reg.message.request_format.as_ref().unwrap(), &custom);
+    }
+
+    #[tokio::test]
+    async fn register_function_raw_runs_handler() {
+        let iii = register_worker("ws://localhost:1234", InitOptions::default());
+        let _func_ref = iii.register_function(
+            "test::raw",
+            RegisterFunction::raw(|input: Value| async move {
+                Ok(json!({ "echo": input }))
+            }),
+        );
+        let handler = {
+            let funcs = iii.inner.functions.lock().unwrap();
+            let stored = funcs.get("test::raw").expect("stored");
+            stored.handler.as_ref().expect("has handler").clone()
+        };
+        let out = handler(json!({"name": "world"})).await.unwrap();
+        assert_eq!(out, json!({"echo": {"name": "world"}}));
     }
 
     #[tokio::test]

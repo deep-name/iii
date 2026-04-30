@@ -20,16 +20,14 @@ pub use channels::{
 };
 pub use error::IIIError;
 pub use iii::{
-    FunctionInfo, FunctionRef, III, IIIAsyncFn, IIIConnectionState, IIIFn, IntoFunctionHandler,
-    IntoFunctionRegistration, RegisterFunction, RegisterTriggerType, TriggerInfo, TriggerTypeInfo,
-    TriggerTypeRef, WorkerInfo, WorkerMetadata, iii_async_fn, iii_fn,
+    FunctionInfo, FunctionRef, III, IIIConnectionState, RegisterFunction, RegisterTriggerType,
+    TriggerInfo, TriggerTypeInfo, TriggerTypeRef, WorkerInfo, WorkerMetadata,
 };
 pub use logger::Logger;
 pub use protocol::{
     EnqueueResult, ErrorBody, FunctionMessage, HttpAuthConfig, HttpInvocationConfig, HttpMethod,
-    Message, RegisterFunctionMessage, RegisterFunctionOptions, RegisterServiceMessage,
-    RegisterTriggerInput, RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction,
-    TriggerRequest,
+    Message, RegisterFunctionMessage, RegisterServiceMessage, RegisterTriggerInput,
+    RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction, TriggerRequest,
 };
 pub use stream::UpdateBuilder;
 pub use structs::{

@@ -11,9 +11,7 @@ use std::time::Duration;
 use serde_json::{Value, json};
 use tokio::sync::Mutex;
 
-use iii_sdk::{
-    IIIError, RegisterFunctionMessage, RegisterTriggerInput, TriggerAction, TriggerRequest,
-};
+use iii_sdk::{IIIError, RegisterFunction, RegisterTriggerInput, TriggerAction, TriggerRequest};
 
 fn unique_topic(prefix: &str) -> String {
     let ts = std::time::SystemTime::now()
@@ -29,16 +27,16 @@ async fn enqueue_returns_acknowledgement() {
 
     let received = Arc::new(Mutex::new(Vec::new()));
     let received_clone = received.clone();
-    iii.register_function((
-        RegisterFunctionMessage::with_id("test::queue::echo::rs".to_string()),
-        move |input: Value| {
+    iii.register_function(
+        "test::queue::echo::rs",
+        RegisterFunction::raw(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
                 Ok(json!({ "processed": true }))
             }
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let result = iii
@@ -99,16 +97,16 @@ async fn enqueue_fifo_with_valid_group_field() {
 
     let received = Arc::new(Mutex::new(Vec::new()));
     let received_clone = received.clone();
-    iii.register_function((
-        RegisterFunctionMessage::with_id("test::queue::fifo::rs".to_string()),
-        move |input: Value| {
+    iii.register_function(
+        "test::queue::fifo::rs",
+        RegisterFunction::raw(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
                 Ok(json!({ "processed": true }))
             }
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let result = iii
@@ -178,16 +176,16 @@ async fn void_returns_null_immediately() {
 
     let call_count = Arc::new(Mutex::new(0u32));
     let count_clone = call_count.clone();
-    iii.register_function((
-        RegisterFunctionMessage::with_id("test::queue::void::rs".to_string()),
-        move |_input: Value| {
+    iii.register_function(
+        "test::queue::void::rs",
+        RegisterFunction::raw(move |_input: Value| {
             let count = count_clone.clone();
             async move {
                 *count.lock().await += 1;
                 Ok(json!({ "done": true }))
             }
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let result = iii
@@ -214,16 +212,16 @@ async fn enqueue_multiple_messages_all_processed() {
 
     let received = Arc::new(Mutex::new(Vec::new()));
     let received_clone = received.clone();
-    iii.register_function((
-        RegisterFunctionMessage::with_id("test::queue::multi::rs".to_string()),
-        move |input: Value| {
+    iii.register_function(
+        "test::queue::multi::rs",
+        RegisterFunction::raw(move |input: Value| {
             let received = received_clone.clone();
             async move {
                 received.lock().await.push(input.clone());
                 Ok(json!({ "processed": true }))
             }
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let message_count = 5;
@@ -268,23 +266,23 @@ async fn chained_enqueue() {
 
     let b_received = Arc::new(Mutex::new(Vec::new()));
     let b_received_clone = b_received.clone();
-    iii.register_function((
-        RegisterFunctionMessage::with_id("test::queue::chain::b::rs".to_string()),
-        move |input: Value| {
+    iii.register_function(
+        "test::queue::chain::b::rs",
+        RegisterFunction::raw(move |input: Value| {
             let b_received = b_received_clone.clone();
             async move {
                 b_received.lock().await.push(input.clone());
                 Ok(json!({ "step": "b_done" }))
             }
-        },
-    ));
+        }),
+    );
 
     let a_received = Arc::new(Mutex::new(Vec::new()));
     let a_received_clone = a_received.clone();
     let iii_for_a = iii.clone();
-    iii.register_function((
-        RegisterFunctionMessage::with_id("test::queue::chain::a::rs".to_string()),
-        move |input: Value| {
+    iii.register_function(
+        "test::queue::chain::a::rs",
+        RegisterFunction::raw(move |input: Value| {
             let a_received = a_received_clone.clone();
             let iii = iii_for_a.clone();
             async move {
@@ -304,8 +302,8 @@ async fn chained_enqueue() {
 
                 Ok(json!({ "step": "a_done" }))
             }
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let result = iii
@@ -354,16 +352,16 @@ async fn durable_subscriber_receives_published_message() {
 
     let received: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
     let received_clone = received.clone();
-    let fn_ref = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        move |data: Value| {
+    let fn_ref = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::raw(move |data: Value| {
             let received = received_clone.clone();
             async move {
                 *received.lock().await = Some(data);
                 Ok(json!({ "ok": true }))
             }
-        },
-    ));
+        }),
+    );
     let trigger = iii
         .register_trigger(RegisterTriggerInput {
             trigger_type: "durable:subscriber".to_string(),
@@ -409,16 +407,16 @@ async fn durable_subscriber_receives_exact_nested_payload() {
 
     let received: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
     let received_clone = received.clone();
-    let fn_ref = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        move |data: Value| {
+    let fn_ref = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::raw(move |data: Value| {
             let received = received_clone.clone();
             async move {
                 *received.lock().await = Some(data);
                 Ok(json!({ "ok": true }))
             }
-        },
-    ));
+        }),
+    );
     let trigger = iii
         .register_trigger(RegisterTriggerInput {
             trigger_type: "durable:subscriber".to_string(),
@@ -462,16 +460,16 @@ async fn durable_subscriber_with_queue_config_receives_messages() {
 
     let received: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
     let received_clone = received.clone();
-    let fn_ref = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        move |data: Value| {
+    let fn_ref = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::raw(move |data: Value| {
             let received = received_clone.clone();
             async move {
                 *received.lock().await = Some(data);
                 Ok(json!({ "ok": true }))
             }
-        },
-    ));
+        }),
+    );
     let trigger = iii
         .register_trigger(RegisterTriggerInput {
             trigger_type: "durable:subscriber".to_string(),
@@ -526,27 +524,27 @@ async fn durable_subscriber_fanout_to_multiple_subscribers() {
     let received_2: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
 
     let received_1_clone = received_1.clone();
-    let fn_1 = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id_1.clone()),
-        move |data: Value| {
+    let fn_1 = iii.register_function(
+        function_id_1.clone(),
+        RegisterFunction::raw(move |data: Value| {
             let received = received_1_clone.clone();
             async move {
                 received.lock().await.push(data);
                 Ok(json!({ "ok": true }))
             }
-        },
-    ));
+        }),
+    );
     let received_2_clone = received_2.clone();
-    let fn_2 = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id_2.clone()),
-        move |data: Value| {
+    let fn_2 = iii.register_function(
+        function_id_2.clone(),
+        RegisterFunction::raw(move |data: Value| {
             let received = received_2_clone.clone();
             async move {
                 received.lock().await.push(data);
                 Ok(json!({ "ok": true }))
             }
-        },
-    ));
+        }),
+    );
     let trigger_1 = iii
         .register_trigger(RegisterTriggerInput {
             trigger_type: "durable:subscriber".to_string(),
@@ -617,26 +615,26 @@ async fn durable_subscriber_condition_function_filters_messages() {
 
     let handler_calls: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
     let handler_calls_clone = handler_calls.clone();
-    let fn_ref = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        move |_data: Value| {
+    let fn_ref = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::raw(move |_data: Value| {
             let handler_calls = handler_calls_clone.clone();
             async move {
                 *handler_calls.lock().await += 1;
                 Ok(json!({ "ok": true }))
             }
-        },
-    ));
-    let cond_fn = iii.register_function((
-        RegisterFunctionMessage::with_id(condition_function_id.clone()),
-        move |input: Value| async move {
+        }),
+    );
+    let cond_fn = iii.register_function(
+        condition_function_id.clone(),
+        RegisterFunction::raw(move |input: Value| async move {
             let accept = input
                 .get("accept")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
             Ok(Value::Bool(accept))
-        },
-    ));
+        }),
+    );
     let trigger = iii
         .register_trigger(RegisterTriggerInput {
             trigger_type: "durable:subscriber".to_string(),

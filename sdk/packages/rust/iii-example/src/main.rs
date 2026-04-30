@@ -72,13 +72,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     trigger_type_example::print_trigger_type_catalog(&iii).await;
 
     iii.register_function(
-        RegisterFunction::new("example::echo", echo_message)
-            .description("Echo a message with repeat and formatting options"),
+        "example::echo",
+        RegisterFunction::new( echo_message).description("Echo a message with repeat and formatting options"),
     );
 
     iii.register_function(
-        RegisterFunction::new_async("example::delay_echo", delay_echo)
-            .description("Echo with configurable delay"),
+        "example::delay_echo",
+        RegisterFunction::new_async( delay_echo).description("Echo with configurable delay"),
     );
 
     let result = iii

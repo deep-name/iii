@@ -24,10 +24,11 @@ Add to `Cargo.toml`:
 | Export                                             | Purpose                                                                          |
 | -------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `register_worker(url, InitOptions)`                | Connect to the engine, returns `III` client                                      |
-| `III::register_function(RegisterFunction::new(id, handler))` | Register a sync function using the builder API                          |
-| `III::register_function(RegisterFunction::new_async(id, handler))` | Register an async function using the builder API                    |
-| `III::register_function_with(id, handler, options)` | Full-options registration (mirror of Node `registerFunction(id, handler, options?)`) |
-| `RegisterFunction`                                 | Builder with `.description()` and auto-generated request schemas via `schemars`  |
+| `III::register_function(id, RegisterFunction::new(handler))` | Register a sync typed function (schemas auto-extracted via `schemars`) |
+| `III::register_function(id, RegisterFunction::new_async(handler))` | Register an async typed function (schemas auto-extracted via `schemars`) |
+| `III::register_function(id, RegisterFunction::raw(handler))` | Register an async closure taking `serde_json::Value` (no schema introspection) |
+| `III::register_function(id, RegisterFunction::http(http_config))` | Register an HTTP-invoked function (Lambda, Workers, etc.) |
+| `RegisterFunction`                                 | Builder with `.description()`, `.metadata()`, `.request_format()`, `.response_format()` |
 | `III::register_trigger(type, function_id, config)` | Bind a trigger to a function                                                     |
 | `III::trigger(TriggerRequest)`                     | Invoke a function                                                                |
 | `TriggerAction::Void`                              | Fire-and-forget invocation                                                       |

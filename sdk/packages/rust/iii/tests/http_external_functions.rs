@@ -11,10 +11,7 @@ use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
-use iii_sdk::{
-    FunctionInfo, HttpInvocationConfig, HttpMethod, RegisterFunctionMessage, RegisterTriggerInput,
-    TriggerRequest,
-};
+use iii_sdk::{FunctionInfo, HttpInvocationConfig, HttpMethod, RegisterFunction, RegisterTriggerInput, TriggerRequest};
 
 fn unique_function_id(prefix: &str) -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -138,16 +135,16 @@ async fn delivers_queue_events_to_external_http_function() {
     let topic = unique_topic("test::http_external::topic::rs");
     let payload = json!({"hello": "world", "count": 1});
 
-    let http_fn = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        HttpInvocationConfig {
+    let http_fn = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe.url(),
             method: HttpMethod::Post,
             timeout_ms: Some(3000),
             headers: HashMap::new(),
             auth: None,
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let _trigger = iii
@@ -190,16 +187,16 @@ async fn registers_and_unregisters_external_http_function() {
     let probe = WebhookProbe::start().await;
     let function_id = unique_function_id("test::http_external::reg_unreg::rs");
 
-    let http_fn = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        HttpInvocationConfig {
+    let http_fn = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe.url(),
             method: HttpMethod::Post,
             timeout_ms: Some(3000),
             headers: HashMap::new(),
             auth: None,
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let found = {
@@ -261,16 +258,16 @@ async fn delivers_events_with_custom_headers() {
     custom_headers.insert("x-custom-header".to_string(), "test-value".to_string());
     custom_headers.insert("x-another".to_string(), "123".to_string());
 
-    let http_fn = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        HttpInvocationConfig {
+    let http_fn = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe.url(),
             method: HttpMethod::Post,
             timeout_ms: Some(3000),
             headers: custom_headers,
             auth: None,
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let _trigger = iii
@@ -324,26 +321,26 @@ async fn delivers_events_to_multiple_external_functions() {
     let payload_a = json!({"source": "topic-a", "value": 1});
     let payload_b = json!({"source": "topic-b", "value": 2});
 
-    let http_fn_a = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id_a.clone()),
-        HttpInvocationConfig {
+    let http_fn_a = iii.register_function(
+        function_id_a.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe_a.url(),
             method: HttpMethod::Post,
             timeout_ms: Some(3000),
             headers: HashMap::new(),
             auth: None,
-        },
-    ));
-    let http_fn_b = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id_b.clone()),
-        HttpInvocationConfig {
+        }),
+    );
+    let http_fn_b = iii.register_function(
+        function_id_b.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe_b.url(),
             method: HttpMethod::Post,
             timeout_ms: Some(3000),
             headers: HashMap::new(),
             auth: None,
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let _trigger_a = iii
@@ -409,16 +406,16 @@ async fn stops_delivering_events_after_unregister() {
     let payload_before = json!({"phase": "before-unregister"});
     let payload_after = json!({"phase": "after-unregister"});
 
-    let http_fn = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        HttpInvocationConfig {
+    let http_fn = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe.url(),
             method: HttpMethod::Post,
             timeout_ms: Some(3000),
             headers: HashMap::new(),
             auth: None,
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let trigger = iii
@@ -481,16 +478,16 @@ async fn delivers_events_using_put_method() {
     let topic = unique_topic("test::http_external::put::rs");
     let payload = json!({"method_test": "put", "value": 42});
 
-    let http_fn = iii.register_function((
-        RegisterFunctionMessage::with_id(function_id.clone()),
-        HttpInvocationConfig {
+    let http_fn = iii.register_function(
+        function_id.clone(),
+        RegisterFunction::http(HttpInvocationConfig {
             url: probe.url(),
             method: HttpMethod::Put,
             timeout_ms: Some(3000),
             headers: HashMap::new(),
             auth: None,
-        },
-    ));
+        }),
+    );
     common::settle().await;
 
     let _trigger = iii

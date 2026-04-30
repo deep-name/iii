@@ -6,8 +6,8 @@ use serde_json::json;
 pub fn setup(iii: &III) {
     // ── Cron trigger ────────────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::scheduled_cleanup", scheduled_cleanup)
-            .description("Runs periodic cleanup every minute"),
+        "example::scheduled_cleanup",
+        RegisterFunction::new( scheduled_cleanup).description("Runs periodic cleanup every minute"),
     );
 
     iii.register_trigger(
@@ -18,8 +18,8 @@ pub fn setup(iii: &III) {
 
     // ── State trigger ───────────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::on_user_updated", on_user_updated)
-            .description("Reacts when a user record is updated in state"),
+        "example::on_user_updated",
+        RegisterFunction::new( on_user_updated).description("Reacts when a user record is updated in state"),
     );
 
     iii.register_trigger(
@@ -30,8 +30,8 @@ pub fn setup(iii: &III) {
 
     // ── HTTP trigger (GET) ──────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::health_check", health_check)
-            .description("Simple health check endpoint"),
+        "example::health_check",
+        RegisterFunction::new( health_check).description("Simple health check endpoint"),
     );
 
     iii.register_trigger(
@@ -42,8 +42,8 @@ pub fn setup(iii: &III) {
 
     // ── Subscribe trigger ───────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::on_order_created", on_order_created)
-            .description("Processes new order events"),
+        "example::on_order_created",
+        RegisterFunction::new( on_order_created).description("Processes new order events"),
     );
 
     iii.register_trigger(
@@ -54,8 +54,8 @@ pub fn setup(iii: &III) {
 
     // ── Queue trigger ───────────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::process_email", process_email)
-            .description("Processes emails from the queue"),
+        "example::process_email",
+        RegisterFunction::new( process_email).description("Processes emails from the queue"),
     );
 
     iii.register_trigger(
@@ -65,8 +65,8 @@ pub fn setup(iii: &III) {
 
     // ── Log trigger ─────────────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::on_error_log", on_error_log)
-            .description("Alerts on error logs"),
+        "example::on_error_log",
+        RegisterFunction::new( on_error_log).description("Alerts on error logs"),
     );
 
     iii.register_trigger(
@@ -77,8 +77,8 @@ pub fn setup(iii: &III) {
 
     // ── Stream trigger ──────────────────────────────────────────────
     iii.register_function(
-        RegisterFunction::new("example::on_chat_message", on_chat_message)
-            .description("Handles chat stream events"),
+        "example::on_chat_message",
+        RegisterFunction::new( on_chat_message).description("Handles chat stream events"),
     );
 
     iii.register_trigger(
@@ -105,6 +105,7 @@ struct StateEvent {
     event_type: String,
     scope: String,
     key: String,
+    #[allow(dead_code)]
     new_value: serde_json::Value,
 }
 

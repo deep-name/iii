@@ -318,20 +318,6 @@ impl RegisterFunctionMessage {
     }
 }
 
-/// Optional fields for [`crate::III::register_function_with`].
-///
-/// Mirrors Node's `RegisterFunctionOptions` and Python's keyword arguments
-/// (`description`, `metadata`, `request_format`, `response_format`).
-/// `id` is a positional argument and `invocation` is set via the handler
-/// argument when the caller passes an [`HttpInvocationConfig`].
-#[derive(Debug, Clone, Default)]
-pub struct RegisterFunctionOptions {
-    pub description: Option<String>,
-    pub request_format: Option<Value>,
-    pub response_format: Option<Value>,
-    pub metadata: Option<Value>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterServiceMessage {
     pub id: String,
@@ -437,22 +423,4 @@ mod tests {
         assert_eq!(serialized["invocation"]["method"], "POST");
     }
 
-    #[test]
-    fn register_function_options_default_is_all_none() {
-        let opts = RegisterFunctionOptions::default();
-        assert!(opts.description.is_none());
-        assert!(opts.request_format.is_none());
-        assert!(opts.response_format.is_none());
-        assert!(opts.metadata.is_none());
-    }
-
-    #[test]
-    fn register_function_options_struct_update_works() {
-        let opts = RegisterFunctionOptions {
-            description: Some("greets a user".to_string()),
-            ..Default::default()
-        };
-        assert_eq!(opts.description.as_deref(), Some("greets a user"));
-        assert!(opts.metadata.is_none());
-    }
 }

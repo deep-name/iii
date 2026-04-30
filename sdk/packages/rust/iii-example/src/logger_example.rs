@@ -3,7 +3,8 @@ use serde_json::{Value, json};
 
 pub fn setup(iii: &III) {
     iii.register_function(
-        RegisterFunction::new_async("example::logger_demo", |input: Value| async move {
+        "example::logger_demo",
+        RegisterFunction::new_async( |input: Value| async move {
             let logger = Logger::new();
 
             logger.info("Processing request", Some(json!({ "input": input })));
@@ -21,7 +22,6 @@ pub fn setup(iii: &III) {
             logger.info("Request processed successfully", None);
 
             Ok::<Value, IIIError>(json!({ "status": "ok" }))
-        })
-        .description("Demonstrates Logger with all log levels"),
+        }).description("Demonstrates Logger with all log levels"),
     );
 }

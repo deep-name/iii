@@ -8,7 +8,7 @@ use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use iii_sdk::{
-    III, IIIError, InitOptions, RegisterFunctionMessage, RegisterServiceMessage, TriggerAction,
+    III, IIIError, InitOptions, RegisterServiceMessage, TriggerAction,
     TriggerRequest, register_worker,
 };
 use serde::Deserialize;
@@ -267,16 +267,9 @@ impl Worker for BridgeClientWorker {
                 .clone()
                 .unwrap_or_else(|| local_function.clone());
 
-            bridge.register_function((
-                RegisterFunctionMessage {
-                    id: remote_function,
-                    description: None,
-                    request_format: None,
-                    response_format: None,
-                    metadata: None,
-                    invocation: None,
-                },
-                move |input| {
+            bridge.register_function(
+                remote_function,
+                iii_sdk::RegisterFunction::raw(move |input| {
                     let engine = engine.clone();
                     let local_function = local_function.clone();
                     async move {
@@ -289,8 +282,8 @@ impl Worker for BridgeClientWorker {
                             }),
                         }
                     }
-                },
-            ));
+                }),
+            );
         }
 
         Ok(())

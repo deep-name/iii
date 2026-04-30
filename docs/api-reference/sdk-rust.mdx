@@ -86,53 +86,13 @@ async shutdown_async()
 
 Register a function with the engine.
 
-Pass a closure/async fn for local execution, or an [`HttpInvocationConfig`]
-for HTTP-invoked functions (Lambda, Cloudflare Workers, etc.).
-
-**Signature**
-
-```rust
-register_function(registration: R) -> FunctionRef
-```
-
-#### Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `registration` | `R` | Yes | - |
-
-#### Example
-
-```rust
-use iii_sdk::{register_worker, InitOptions, RegisterFunction};
-use serde::Deserialize;
-use schemars::JsonSchema;
-
-#[derive(Deserialize, JsonSchema)]
-struct Input { name: String }
-fn greet(input: Input) -> Result<String, String> {
-    Ok(format!("Hello, {}!", input.name))
-}
-
-let iii = register_worker("ws://localhost:49134", InitOptions::default());
-iii.register_function(RegisterFunction::new("greet", greet));
-```
-
-### register_function_with
-
-Register a function with full options.
-
-This is the "full options" entry point. For the happy-path of
-registering a closure with no extra options, prefer
-[`register_function`](Self::register_function).
-
 Argument order matches the Node and Python SDKs:
-`(id, handler_or_invocation, options)`.
+`(id, registration)`.
 
 **Signature**
 
 ```rust
-register_function_with(id: impl Into<String>, handler: H, options: RegisterFunctionOptions) -> FunctionRef
+register_function(id: impl Into<String>, registration: RegisterFunction) -> FunctionRef
 ```
 
 #### Parameters
@@ -140,8 +100,30 @@ register_function_with(id: impl Into<String>, handler: H, options: RegisterFunct
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | `impl Into<String>` | Yes | Function identifier. |
-| `handler` | `H` | Yes | Async closure or [`HttpInvocationConfig`]. |
-| `options` | [`RegisterFunctionOptions`](#registerfunctionoptions) | Yes | Optional metadata. Use [`RegisterFunctionOptions::default()`] when no options are needed. |
+| `registration` | `RegisterFunction` | Yes | Built via [`RegisterFunction::new`], [`RegisterFunction::new_async`], [`RegisterFunction::raw`], or [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`, `.request_format(...)`, `.response_format(...)` as needed. |
+
+#### Example
+
+```rust
+use iii_sdk::{register_worker, InitOptions, RegisterFunction};
+use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
+
+#[derive(Deserialize, JsonSchema)]
+struct Input { name: String }
+#[derive(Serialize, JsonSchema)]
+struct Output { message: String }
+
+async fn greet(input: Input) -> Result<Output, String> {
+    Ok(Output { message: format!("Hello, {}!", input.name) })
+}
+
+let iii = register_worker("ws://localhost:49134", InitOptions::default());
+iii.register_function(
+    "greet",
+    RegisterFunction::new_async(greet).description("Greets a user"),
+);
+```
 
 ### register_service
 
@@ -425,7 +407,7 @@ logger.debug("Cache lookup", Some(json!({ "key": "user:42", "hit": false })));
 
 ## Types
 
-[`InitOptions`](#initoptions) · [`IIIError`](#iiierror) · [`IIIConnectionState`](#iiiconnectionstate) · [`TriggerRequest`](#triggerrequest) · [`TriggerAction`](#triggeraction) · [`HttpInvocationConfig`](#httpinvocationconfig) · [`HttpAuthConfig`](#httpauthconfig) · [`HttpMethod`](#httpmethod) · [`Channel`](#channel) · [`ChannelReader`](#channelreader) · [`ChannelWriter`](#channelwriter) · [`ChannelDirection`](#channeldirection) · [`StreamChannelRef`](#streamchannelref) · [`FunctionRef`](#functionref) · [`WorkerMetadata`](#workermetadata) · [`Trigger`](#trigger) · [`RegisterFunctionOptions`](#registerfunctionoptions) · [`RegisterServiceMessage`](#registerservicemessage) · [`OtelConfig`](#otelconfig) · [`ReconnectionConfig`](#reconnectionconfig)
+[`InitOptions`](#initoptions) · [`IIIError`](#iiierror) · [`IIIConnectionState`](#iiiconnectionstate) · [`TriggerRequest`](#triggerrequest) · [`TriggerAction`](#triggeraction) · [`Channel`](#channel) · [`ChannelReader`](#channelreader) · [`ChannelWriter`](#channelwriter) · [`ChannelDirection`](#channeldirection) · [`StreamChannelRef`](#streamchannelref) · [`FunctionRef`](#functionref) · [`WorkerMetadata`](#workermetadata) · [`Trigger`](#trigger) · [`RegisterServiceMessage`](#registerservicemessage) · [`OtelConfig`](#otelconfig) · [`ReconnectionConfig`](#reconnectionconfig)
 
 ### InitOptions
 
@@ -487,43 +469,6 @@ the invocation.
 | --- | --- | --- | --- |
 | `Enqueue` | `{ queue: String }` | Yes | Routes the invocation through a named queue. |
 | `Void` | `unit` | Yes | Fire-and-forget routing. |
-
-### HttpInvocationConfig
-
-Configuration for registering an HTTP-invoked function (Lambda, Cloudflare
-Workers, etc.) instead of a local handler.
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `url` | `String` | Yes | - |
-| `method` | [`HttpMethod`](#httpmethod) | Yes | - |
-| `timeout_ms` | `Option<u64>` | No | - |
-| `headers` | `HashMap<String, String>` | Yes | - |
-| `auth` | Option&lt;[`HttpAuthConfig`](#httpauthconfig)&gt; | No | - |
-
-### HttpAuthConfig
-
-Authentication configuration for HTTP-invoked functions.
-
-- `Hmac` -- HMAC signature verification using a shared secret.
-- `Bearer` -- Bearer token authentication.
-- `ApiKey` -- API key sent via a custom header.
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `Hmac` | `{ secret_key: String }` | Yes | - |
-| `Bearer` | `{ token_key: String }` | Yes | - |
-| `ApiKey` | `{ header: String, value_key: String }` | Yes | - |
-
-### HttpMethod
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `Get` | `unit` | Yes | - |
-| `Post` | `unit` | Yes | - |
-| `Put` | `unit` | Yes | - |
-| `Patch` | `unit` | Yes | - |
-| `Delete` | `unit` | Yes | - |
 
 ### Channel
 
@@ -601,22 +546,6 @@ Call [`unregister`](Trigger::unregister) to remove the trigger from the engine.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `unregister` | `fn()` | Yes | Remove this trigger from the engine. |
-
-### RegisterFunctionOptions
-
-Optional fields for [`crate::III::register_function_with`].
-
-Mirrors Node's `RegisterFunctionOptions` and Python's keyword arguments
-(`description`, `metadata`, `request_format`, `response_format`).
-`id` is a positional argument and `invocation` is set via the handler
-argument when the caller passes an [`HttpInvocationConfig`].
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `Option<String>` | No | - |
-| `request_format` | `Option<Value>` | No | - |
-| `response_format` | `Option<Value>` | No | - |
-| `metadata` | `Option<Value>` | No | - |
 
 ### RegisterServiceMessage
 
