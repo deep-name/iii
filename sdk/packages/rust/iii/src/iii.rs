@@ -36,9 +36,8 @@ use crate::{
     error::IIIError,
     protocol::{
         ErrorBody, HttpInvocationConfig, Message, RegisterFunctionMessage, RegisterServiceMessage,
-        RegisterTriggerInput,
-        RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction, TriggerRequest,
-        UnregisterTriggerMessage, UnregisterTriggerTypeMessage,
+        RegisterTriggerInput, RegisterTriggerMessage, RegisterTriggerTypeMessage, TriggerAction,
+        TriggerRequest, UnregisterTriggerMessage, UnregisterTriggerTypeMessage,
     },
     triggers::{Trigger, TriggerConfig, TriggerHandler},
     types::{Channel, RemoteFunctionData, RemoteFunctionHandler, RemoteTriggerTypeData},
@@ -530,8 +529,7 @@ impl RegisterFunction {
         F: Fn(Value) -> Fut + Send + Sync + 'static,
         Fut: std::future::Future<Output = Result<Value, IIIError>> + Send + 'static,
     {
-        let handler: RemoteFunctionHandler =
-            Arc::new(move |input: Value| Box::pin(f(input)));
+        let handler: RemoteFunctionHandler = Arc::new(move |input: Value| Box::pin(f(input)));
         Self {
             message: empty_message(),
             handler: Some(handler),
@@ -1726,8 +1724,7 @@ mod tests {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let func_ref = iii.register_function(
             "test::reshaped::ordering",
-            RegisterFunction::raw(|input: Value| async move { Ok(input) })
-                .description("reshaped"),
+            RegisterFunction::raw(|input: Value| async move { Ok(input) }).description("reshaped"),
         );
         assert_eq!(func_ref.id, "test::reshaped::ordering");
 
@@ -1749,8 +1746,7 @@ mod tests {
             auth: None,
         };
 
-        let func_ref =
-            iii.register_function("external::reshaped", RegisterFunction::http(config));
+        let func_ref = iii.register_function("external::reshaped", RegisterFunction::http(config));
 
         assert_eq!(func_ref.id, "external::reshaped");
         let funcs = iii.inner.functions.lock().unwrap();
@@ -1785,7 +1781,10 @@ mod tests {
         assert!(reg.message.request_format.is_some());
         assert!(reg.message.response_format.is_some());
         assert_eq!(reg.message.request_format.as_ref().unwrap()["title"], "In");
-        assert_eq!(reg.message.response_format.as_ref().unwrap()["title"], "Out");
+        assert_eq!(
+            reg.message.response_format.as_ref().unwrap()["title"],
+            "Out"
+        );
     }
 
     #[tokio::test]
@@ -1808,9 +1807,7 @@ mod tests {
         let iii = register_worker("ws://localhost:1234", InitOptions::default());
         let _func_ref = iii.register_function(
             "test::raw",
-            RegisterFunction::raw(|input: Value| async move {
-                Ok(json!({ "echo": input }))
-            }),
+            RegisterFunction::raw(|input: Value| async move { Ok(json!({ "echo": input })) }),
         );
         let handler = {
             let funcs = iii.inner.functions.lock().unwrap();

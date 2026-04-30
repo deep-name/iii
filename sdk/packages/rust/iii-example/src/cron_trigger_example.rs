@@ -7,7 +7,7 @@ pub fn setup(iii: &III) {
     // ── Cron trigger ────────────────────────────────────────────────
     iii.register_function(
         "example::scheduled_cleanup",
-        RegisterFunction::new( scheduled_cleanup).description("Runs periodic cleanup every minute"),
+        RegisterFunction::new(scheduled_cleanup).description("Runs periodic cleanup every minute"),
     );
 
     iii.register_trigger(
@@ -19,7 +19,8 @@ pub fn setup(iii: &III) {
     // ── State trigger ───────────────────────────────────────────────
     iii.register_function(
         "example::on_user_updated",
-        RegisterFunction::new( on_user_updated).description("Reacts when a user record is updated in state"),
+        RegisterFunction::new(on_user_updated)
+            .description("Reacts when a user record is updated in state"),
     );
 
     iii.register_trigger(
@@ -31,7 +32,7 @@ pub fn setup(iii: &III) {
     // ── HTTP trigger (GET) ──────────────────────────────────────────
     iii.register_function(
         "example::health_check",
-        RegisterFunction::new( health_check).description("Simple health check endpoint"),
+        RegisterFunction::new(health_check).description("Simple health check endpoint"),
     );
 
     iii.register_trigger(
@@ -43,7 +44,7 @@ pub fn setup(iii: &III) {
     // ── Subscribe trigger ───────────────────────────────────────────
     iii.register_function(
         "example::on_order_created",
-        RegisterFunction::new( on_order_created).description("Processes new order events"),
+        RegisterFunction::new(on_order_created).description("Processes new order events"),
     );
 
     iii.register_trigger(
@@ -55,7 +56,7 @@ pub fn setup(iii: &III) {
     // ── Queue trigger ───────────────────────────────────────────────
     iii.register_function(
         "example::process_email",
-        RegisterFunction::new( process_email).description("Processes emails from the queue"),
+        RegisterFunction::new(process_email).description("Processes emails from the queue"),
     );
 
     iii.register_trigger(
@@ -66,7 +67,7 @@ pub fn setup(iii: &III) {
     // ── Log trigger ─────────────────────────────────────────────────
     iii.register_function(
         "example::on_error_log",
-        RegisterFunction::new( on_error_log).description("Alerts on error logs"),
+        RegisterFunction::new(on_error_log).description("Alerts on error logs"),
     );
 
     iii.register_trigger(
@@ -78,7 +79,7 @@ pub fn setup(iii: &III) {
     // ── Stream trigger ──────────────────────────────────────────────
     iii.register_function(
         "example::on_chat_message",
-        RegisterFunction::new( on_chat_message).description("Handles chat stream events"),
+        RegisterFunction::new(on_chat_message).description("Handles chat stream events"),
     );
 
     iii.register_trigger(

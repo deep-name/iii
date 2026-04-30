@@ -73,12 +73,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     iii.register_function(
         "example::echo",
-        RegisterFunction::new( echo_message).description("Echo a message with repeat and formatting options"),
+        RegisterFunction::new(echo_message)
+            .description("Echo a message with repeat and formatting options"),
     );
 
     iii.register_function(
         "example::delay_echo",
-        RegisterFunction::new_async( delay_echo).description("Echo with configurable delay"),
+        RegisterFunction::new_async(delay_echo).description("Echo with configurable delay"),
     );
 
     let result = iii

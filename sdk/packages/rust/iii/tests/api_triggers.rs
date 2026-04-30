@@ -206,8 +206,8 @@ async fn custom_status_code() {
     iii.register_function(
         "test::api::notfound::rs",
         RegisterFunction::raw(|_input: Value| async move {
-        Ok(json!({"status_code": 404, "body": {"error": "Not found"}}))
-    }),
+            Ok(json!({"status_code": 404, "body": {"error": "Not found"}}))
+        }),
     );
 
     let _trigger = iii

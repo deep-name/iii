@@ -422,5 +422,4 @@ mod tests {
         );
         assert_eq!(serialized["invocation"]["method"], "POST");
     }
-
 }

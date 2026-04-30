@@ -23,7 +23,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use iii_sdk::{IIIError, InitOptions, OtelConfig, RegisterFunctionMessage, register_worker};
+use iii_sdk::{IIIError, InitOptions, OtelConfig, register_worker};
 use serde_json::Value;
 
 use crate::sandbox_daemon::config::SandboxConfig;
@@ -111,16 +111,10 @@ fn register_sandbox_create(
             }
         }) as Pin<Box<dyn Future<Output = Result<Value, IIIError>> + Send>>
     };
-    let _ = iii.register_function_with(
-        RegisterFunctionMessage {
-            id: "sandbox::create".to_string(),
-            description: Some("Create an ephemeral sandbox VM from a preset image".to_string()),
-            request_format: None,
-            response_format: None,
-            metadata: None,
-            invocation: None,
-        },
-        handler,
+    let _ = iii.register_function(
+        "sandbox::create",
+        iii_sdk::RegisterFunction::raw(handler)
+            .description("Create an ephemeral sandbox VM from a preset image".to_string()),
     );
 }
 
@@ -144,16 +138,10 @@ fn register_sandbox_exec(
             }
         }) as Pin<Box<dyn Future<Output = Result<Value, IIIError>> + Send>>
     };
-    let _ = iii.register_function_with(
-        RegisterFunctionMessage {
-            id: "sandbox::exec".to_string(),
-            description: Some("Execute a command inside a live sandbox".to_string()),
-            request_format: None,
-            response_format: None,
-            metadata: None,
-            invocation: None,
-        },
-        handler,
+    let _ = iii.register_function(
+        "sandbox::exec",
+        iii_sdk::RegisterFunction::raw(handler)
+            .description("Execute a command inside a live sandbox".to_string()),
     );
 }
 
@@ -177,16 +165,10 @@ fn register_sandbox_stop(
             }
         }) as Pin<Box<dyn Future<Output = Result<Value, IIIError>> + Send>>
     };
-    let _ = iii.register_function_with(
-        RegisterFunctionMessage {
-            id: "sandbox::stop".to_string(),
-            description: Some("Stop and remove a running sandbox".to_string()),
-            request_format: None,
-            response_format: None,
-            metadata: None,
-            invocation: None,
-        },
-        handler,
+    let _ = iii.register_function(
+        "sandbox::stop",
+        iii_sdk::RegisterFunction::raw(handler)
+            .description("Stop and remove a running sandbox".to_string()),
     );
 }
 
@@ -203,15 +185,8 @@ fn register_sandbox_list(
             serde_json::to_value(resp).map_err(|e| IIIError::Handler(format!("serialize: {e}")))
         }) as Pin<Box<dyn Future<Output = Result<Value, IIIError>> + Send>>
     };
-    let _ = iii.register_function_with(
-        RegisterFunctionMessage {
-            id: "sandbox::list".to_string(),
-            description: Some("List active sandboxes".to_string()),
-            request_format: None,
-            response_format: None,
-            metadata: None,
-            invocation: None,
-        },
-        handler,
+    let _ = iii.register_function(
+        "sandbox::list",
+        iii_sdk::RegisterFunction::raw(handler).description("List active sandboxes".to_string()),
     );
 }

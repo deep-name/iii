@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use iii_sdk::{
-    III, InitOptions, RegisterTriggerInput, TriggerRequest, UpdateOp,
-    UpdateResult, register_worker,
+    III, InitOptions, RegisterTriggerInput, TriggerRequest, UpdateOp, UpdateResult,
+    register_worker,
     types::{DeleteResult, SetResult},
 };
 use serde_json::Value;

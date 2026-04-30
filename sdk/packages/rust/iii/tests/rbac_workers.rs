@@ -48,8 +48,7 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::rbac-worker::auth",
-            RegisterFunction::new_async(
-            move |auth_input: AuthInput| {
+            RegisterFunction::new_async(move |auth_input: AuthInput| {
                 let auth_calls = auth_calls.clone();
 
                 async move {
@@ -101,8 +100,7 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::rbac-worker::middleware",
-            RegisterFunction::new_async(
-            |input: MiddlewareFunctionInput| {
+            RegisterFunction::new_async(|input: MiddlewareFunctionInput| {
                 let iii = common::shared_iii().clone();
                 async move {
                     let mut enriched = input.payload.as_object().cloned().unwrap_or_default();
@@ -131,8 +129,7 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::rbac-worker::on-function-reg",
-            RegisterFunction::new_async(
-            |input: OnFunctionRegistrationInput| async move {
+            RegisterFunction::new_async(|input: OnFunctionRegistrationInput| async move {
                 if input.function_id.starts_with("denied::") {
                     return Err(iii_sdk::IIIError::Handler(
                         "denied function registration".into(),
@@ -148,8 +145,7 @@ fn ensure_functions_registered() {
         let tt_reg_calls = tt_reg_calls().clone();
         refs.push(iii.register_function(
             "test::rbac-worker::on-trigger-type-reg",
-            RegisterFunction::new_async(
-            move |input: OnTriggerTypeRegistrationInput| {
+            RegisterFunction::new_async(move |input: OnTriggerTypeRegistrationInput| {
                 let tt_reg_calls = tt_reg_calls.clone();
                 async move {
                     let denied = input.trigger_type_id.starts_with("denied-tt::");
@@ -167,8 +163,7 @@ fn ensure_functions_registered() {
         let trig_reg_calls = trig_reg_calls().clone();
         refs.push(iii.register_function(
             "test::rbac-worker::on-trigger-reg",
-            RegisterFunction::new_async(
-            move |input: OnTriggerRegistrationInput| {
+            RegisterFunction::new_async(move |input: OnTriggerRegistrationInput| {
                 let trig_reg_calls = trig_reg_calls.clone();
                 async move {
                     let denied = input.function_id.starts_with("denied-trig::");
@@ -214,16 +209,20 @@ fn ensure_functions_registered() {
 
         refs.push(iii.register_function(
             "test::ew::valid-token-echo",
-            RegisterFunction::raw(|input: Value| async move { Ok(json!({ "echoed": input, "valid_token": true })) }),
+            RegisterFunction::raw(|input: Value| async move {
+                Ok(json!({ "echoed": input, "valid_token": true }))
+            }),
         ));
 
-        refs.push(iii.register_function(
-            "test::ew::meta-public",
-            RegisterFunction::raw(|input: Value| async move {
-                Ok(json!({ "meta_echoed": input }))
-            })
-            .metadata(json!({ "ew_public": true })),
-        ));
+        refs.push(
+            iii.register_function(
+                "test::ew::meta-public",
+                RegisterFunction::raw(
+                    |input: Value| async move { Ok(json!({ "meta_echoed": input })) },
+                )
+                .metadata(json!({ "ew_public": true })),
+            ),
+        );
 
         refs.push(iii.register_function(
             "test::ew::private",
@@ -738,8 +737,7 @@ async fn infrastructure_logger_callable_from_user_handler_under_restricted_expos
     let inner_client = iii_client.clone();
     let _handle = iii_client.register_function(
         "test::ew::carveout-logger-handler",
-        RegisterFunction::new_async(
-        move |input: Value| {
+        RegisterFunction::new_async(move |input: Value| {
             let client = inner_client.clone();
             async move {
                 client
