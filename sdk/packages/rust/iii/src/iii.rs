@@ -768,9 +768,9 @@ impl III {
     /// # Arguments
     /// * `id` — Function identifier.
     /// * `registration` — Built via [`RegisterFunction::new`],
-    ///   [`RegisterFunction::new_async`], [`RegisterFunction::new_async`], or
-    ///   [`RegisterFunction::http`]. Chain `.description(...)`, `.metadata(...)`,
-    ///   `.request_format(...)`, `.response_format(...)` as needed.
+    ///   [`RegisterFunction::new_async`], or [`RegisterFunction::http`].
+    ///   Chain `.description(...)`, `.metadata(...)`, `.request_format(...)`,
+    ///   `.response_format(...)` as needed.
     ///
     /// # Panics
     /// Panics if `id` is empty or already registered.

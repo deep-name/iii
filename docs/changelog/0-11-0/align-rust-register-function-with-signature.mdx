@@ -10,7 +10,7 @@ The Rust SDK's function registration is collapsed into a single entry point that
 | SDK | Signature |
 | --- | --- |
 | Node | `registerFunction(functionId, handler, options?)` |
-| Python | `register_function(function_id, handler, *, description, metadata, request_format, response_format)` |
+| Python | `register_function(function_id, handler_or_invocation, *, description, metadata, request_format, response_format)` |
 | Rust | `register_function(id, RegisterFunction)` |
 
 `RegisterFunction` carries the handler plus all optional metadata. There are **three** constructors:
@@ -75,9 +75,9 @@ fn greet(input: GreetInput) -> Result<String, IIIError> {
 
 | Removed | Replacement |
 | --- | --- |
-| `III::register_function_with(id, handler, options)` | `III::register_function(id, RegisterFunction::new_async(handler).description(...))` |
-| `register_function((RegisterFunctionMessage, handler))` tuple form | `register_function(id, RegisterFunction::new_async(handler))` |
-| `RegisterFunction::untyped(f)` | `RegisterFunction::new_async(f)` (now accepts `Value` closures) |
+| `III::register_function_with(id, handler, options)` | `III::register_function(id, RegisterFunction::new(handler).description(...))` for sync, or `RegisterFunction::new_async(handler)` for async |
+| `register_function((RegisterFunctionMessage, handler))` tuple form | `register_function(id, RegisterFunction::new(handler))` for sync, or `RegisterFunction::new_async(handler)` for async |
+| `RegisterFunction::untyped(f)` | `RegisterFunction::new_async(f)` (now accepts `Value` closures directly) |
 | `RegisterFunctionOptions` | Builder methods on `RegisterFunction` |
 | `IntoFunctionRegistration` trait | Single concrete `RegisterFunction` argument |
 | `IntoFunctionHandler` trait + impls | Each registration kind has its own `RegisterFunction::*` constructor |
@@ -104,10 +104,12 @@ Replace each registration call with the matching `RegisterFunction::*` construct
 | --- | --- |
 | `register_function(RegisterFunction::new("id", f))` | `register_function("id", RegisterFunction::new(f))` |
 | `register_function(RegisterFunction::new_async("id", f).description("d"))` | `register_function("id", RegisterFunction::new_async(f).description("d"))` |
-| `register_function((RegisterFunctionMessage::with_id("id".into()), handler))` | `register_function("id", RegisterFunction::new_async(handler))` |
+| `register_function((RegisterFunctionMessage::with_id("id".into()), sync_handler))` | `register_function("id", RegisterFunction::new(sync_handler))` |
+| `register_function((RegisterFunctionMessage::with_id("id".into()), async_handler))` | `register_function("id", RegisterFunction::new_async(async_handler))` |
 | `register_function_with(RegisterFunctionMessage::with_id("id".into()), http_config)` | `register_function("id", RegisterFunction::http(http_config))` |
 | `register_function_with("id", http_config, RegisterFunctionOptions::default())` | `register_function("id", RegisterFunction::http(http_config))` |
-| `register_function_with("id", handler, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` | `register_function("id", RegisterFunction::new_async(handler).description("d"))` |
+| `register_function_with("id", sync_handler, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` | `register_function("id", RegisterFunction::new(sync_handler).description("d"))` |
+| `register_function_with("id", async_handler, RegisterFunctionOptions { description: Some("d".into()), ..Default::default() })` | `register_function("id", RegisterFunction::new_async(async_handler).description("d"))` |
 | `RegisterFunction::untyped(handler)` | `RegisterFunction::new_async(handler)` |
 | `iii_fn(f)` / `iii_async_fn(f)` | `RegisterFunction::new(f)` / `RegisterFunction::new_async(f)` |
 | `fn handler(...) -> Result<R, String>` | `fn handler(...) -> Result<R, IIIError>` |

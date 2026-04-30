@@ -348,7 +348,7 @@ async fn chained_enqueue() {
 async fn durable_subscriber_receives_published_message() {
     let iii = common::shared_iii();
     let topic = unique_topic("test-durable-basic-rs");
-    let function_id = format!("test.queue.durable.basic.rs.{}", topic);
+    let function_id = format!("test::queue::durable::basic::rs::{}", topic);
 
     let received: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
     let received_clone = received.clone();
@@ -402,7 +402,7 @@ async fn durable_subscriber_receives_published_message() {
 async fn durable_subscriber_receives_exact_nested_payload() {
     let iii = common::shared_iii();
     let topic = unique_topic("test-durable-payload-rs");
-    let function_id = format!("test.queue.durable.payload.rs.{}", topic);
+    let function_id = format!("test::queue::durable::payload::rs::{}", topic);
     let payload = json!({ "id": "x1", "count": 42, "nested": { "a": 1 } });
 
     let received: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
@@ -456,7 +456,7 @@ async fn durable_subscriber_receives_exact_nested_payload() {
 async fn durable_subscriber_with_queue_config_receives_messages() {
     let iii = common::shared_iii();
     let topic = unique_topic("test-durable-infra-rs");
-    let function_id = format!("test.queue.durable.infra.rs.{}", topic);
+    let function_id = format!("test::queue::durable::infra::rs::{}", topic);
 
     let received: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
     let received_clone = received.clone();
@@ -517,8 +517,8 @@ async fn durable_subscriber_with_queue_config_receives_messages() {
 async fn durable_subscriber_fanout_to_multiple_subscribers() {
     let iii = common::shared_iii();
     let topic = unique_topic("test-durable-fanout-rs");
-    let function_id_1 = format!("test.queue.durable.multi1.rs.{}", topic);
-    let function_id_2 = format!("test.queue.durable.multi2.rs.{}", topic);
+    let function_id_1 = format!("test::queue::durable::multi1::rs::{}", topic);
+    let function_id_2 = format!("test::queue::durable::multi2::rs::{}", topic);
 
     let received_1: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
     let received_2: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
@@ -610,7 +610,7 @@ async fn durable_subscriber_fanout_to_multiple_subscribers() {
 async fn durable_subscriber_condition_function_filters_messages() {
     let iii = common::shared_iii();
     let topic = unique_topic("test-durable-cond-rs");
-    let function_id = format!("test.queue.durable.cond.rs.{}", topic);
+    let function_id = format!("test::queue::durable::cond::rs::{}", topic);
     let condition_function_id = format!("{function_id}::conditions::0");
 
     let handler_calls: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
