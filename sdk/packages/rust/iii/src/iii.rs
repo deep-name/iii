@@ -370,10 +370,10 @@ where
     fn into_handler(self) -> RemoteFunctionHandler {
         Arc::new(move |input: Value| {
             let output = serde_json::from_value::<T>(input)
-                .map_err(|e| IIIError::Handler(e.to_string()))
+                .map_err(|e| IIIError::Serde(e.to_string()))
                 .and_then(&self)
                 .and_then(|val| {
-                    serde_json::to_value(&val).map_err(|e| IIIError::Handler(e.to_string()))
+                    serde_json::to_value(&val).map_err(|e| IIIError::Serde(e.to_string()))
                 });
             Box::pin(async move { output })
         })
@@ -428,11 +428,11 @@ where
                         Box::pin(async move {
                             fut.await.and_then(|val| {
                                 serde_json::to_value(&val)
-                                    .map_err(|e| IIIError::Handler(e.to_string()))
+                                    .map_err(|e| IIIError::Serde(e.to_string()))
                             })
                         })
                     }
-                    Err(e) => Box::pin(async move { Err(IIIError::Handler(e.to_string())) }),
+                    Err(e) => Box::pin(async move { Err(IIIError::Serde(e.to_string())) }),
                 }
             },
         )
@@ -792,7 +792,7 @@ impl III {
     ///
     /// let iii = register_worker("ws://localhost:49134", InitOptions::default());
     /// iii.register_function(
-    ///     "greet",
+    ///     "greetings::greet",
     ///     RegisterFunction::new_async(greet).description("Greets a user"),
     /// );
     /// ```
@@ -803,7 +803,7 @@ impl III {
     /// # use serde_json::{json, Value};
     /// # let iii = register_worker("ws://localhost:49134", InitOptions::default());
     /// iii.register_function(
-    ///     "echo",
+    ///     "debug::echo",
     ///     RegisterFunction::new_async(|input: Value| async move { Ok(json!({"echo": input})) }),
     /// );
     /// ```
