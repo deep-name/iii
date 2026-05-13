@@ -110,6 +110,22 @@ pub struct OtelConfig {
     pub memory_max_spans: usize,
 }
 
+fn non_blank(value: String) -> Option<String> {
+    (!value.trim().is_empty()).then_some(value)
+}
+
+fn service_name_or_default(configured: &str) -> String {
+    non_blank(configured.to_string())
+        .or_else(|| env::var("OTEL_SERVICE_NAME").ok().and_then(non_blank))
+        .unwrap_or_else(|| "iii".to_string())
+}
+
+fn service_version_or_default(configured: &str) -> String {
+    non_blank(configured.to_string())
+        .or_else(|| env::var("SERVICE_VERSION").ok().and_then(non_blank))
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
 impl Default for OtelConfig {
     fn default() -> Self {
         // First check global config from YAML, then fall back to environment variables
@@ -124,19 +140,22 @@ impl Default for OtelConfig {
             })
             .unwrap_or(false);
 
-        let service_name = global_cfg
-            .and_then(|c| c.service_name.clone())
-            .or_else(|| env::var("OTEL_SERVICE_NAME").ok())
-            .unwrap_or_else(|| "iii".to_string());
+        let service_name = service_name_or_default(
+            global_cfg
+                .and_then(|c| c.service_name.as_deref())
+                .unwrap_or(""),
+        );
 
-        let service_version = global_cfg
-            .and_then(|c| c.service_version.clone())
-            .or_else(|| env::var("SERVICE_VERSION").ok())
-            .unwrap_or_else(|| "unknown".to_string());
+        let service_version = service_version_or_default(
+            global_cfg
+                .and_then(|c| c.service_version.as_deref())
+                .unwrap_or(""),
+        );
 
         let service_namespace = global_cfg
             .and_then(|c| c.service_namespace.clone())
-            .or_else(|| env::var("SERVICE_NAMESPACE").ok());
+            .and_then(non_blank)
+            .or_else(|| env::var("SERVICE_NAMESPACE").ok().and_then(non_blank));
 
         let exporter = global_cfg
             .and_then(|c| c.exporter.clone())
@@ -852,19 +871,24 @@ where
     // Build the sampler using advanced configuration if available
     let sampler = build_sampler(config);
 
-    // Build resource attributes with OTEL semantic conventions
-    // Using string keys for attributes not available in the crate version
+    let service_name = service_name_or_default(&config.service_name);
+    let service_version = service_version_or_default(&config.service_version);
+    let service_namespace = config
+        .service_namespace
+        .clone()
+        .and_then(non_blank)
+        .or_else(|| env::var("SERVICE_NAMESPACE").ok().and_then(non_blank));
+
     let mut resource_builder = Resource::builder()
-        .with_service_name(config.service_name.clone())
+        .with_service_name(service_name.clone())
         .with_attributes([
-            KeyValue::new("service.version", config.service_version.clone()),
+            KeyValue::new("service.version", service_version),
             KeyValue::new("service.instance.id", uuid::Uuid::new_v4().to_string()),
         ]);
 
-    // Only add namespace if provided (optional attribute)
-    if let Some(namespace) = &config.service_namespace {
+    if let Some(namespace) = service_namespace {
         resource_builder =
-            resource_builder.with_attribute(KeyValue::new("service.namespace", namespace.clone()));
+            resource_builder.with_attribute(KeyValue::new("service.namespace", namespace));
     }
 
     let resource = resource_builder.build();
@@ -899,10 +923,8 @@ where
                         "Failed to create OTLP exporter, falling back to memory-only mode"
                     );
                     // Fall back to memory-only mode
-                    let exporter = InMemorySpanExporter::new(
-                        config.memory_max_spans,
-                        config.service_name.clone(),
-                    );
+                    let exporter =
+                        InMemorySpanExporter::new(config.memory_max_spans, service_name.clone());
                     SdkTracerProvider::builder()
                         .with_simple_exporter(exporter)
                         .with_sampler(sampler)
@@ -913,8 +935,7 @@ where
             }
         }
         ExporterType::Memory => {
-            let exporter =
-                InMemorySpanExporter::new(config.memory_max_spans, config.service_name.clone());
+            let exporter = InMemorySpanExporter::new(config.memory_max_spans, service_name.clone());
 
             SdkTracerProvider::builder()
                 .with_simple_exporter(exporter)
@@ -940,11 +961,8 @@ where
                     init_sdk_span_forwarder(&config.endpoint);
 
                     // Create tee exporter that sends to both
-                    let tee_exporter = TeeSpanExporter::new(
-                        otlp_exporter,
-                        memory_storage,
-                        config.service_name.clone(),
-                    );
+                    let tee_exporter =
+                        TeeSpanExporter::new(otlp_exporter, memory_storage, service_name.clone());
 
                     SdkTracerProvider::builder()
                         .with_batch_exporter(tee_exporter)
@@ -960,10 +978,8 @@ where
                         "Failed to create OTLP exporter for 'both' mode, using memory-only"
                     );
                     // Fall back to memory-only with our already-created storage
-                    let exporter = InMemorySpanExporter::with_storage(
-                        memory_storage,
-                        config.service_name.clone(),
-                    );
+                    let exporter =
+                        InMemorySpanExporter::with_storage(memory_storage, service_name.clone());
                     SdkTracerProvider::builder()
                         .with_simple_exporter(exporter)
                         .with_sampler(sampler)
@@ -997,7 +1013,7 @@ where
 
     println!(
         "OpenTelemetry initialized: exporter={}, service_name={}, sampling_ratio={}",
-        exporter_info, config.service_name, config.sampling_ratio
+        exporter_info, service_name, config.sampling_ratio
     );
 
     Some(OpenTelemetryLayer::new(tracer))
@@ -3182,6 +3198,83 @@ pub fn get_logs_exporter_type() -> LogsExporterType {
 mod tests {
     use super::*;
     use serial_test::serial;
+
+    fn restore_env_var(name: &str, value: Option<std::ffi::OsString>) {
+        unsafe {
+            match value {
+                Some(value) => env::set_var(name, value),
+                None => env::remove_var(name),
+            }
+        }
+    }
+
+    struct EnvVarGuard {
+        name: &'static str,
+        value: Option<std::ffi::OsString>,
+    }
+
+    impl EnvVarGuard {
+        fn set(name: &'static str, value: &str) -> Self {
+            let guard = Self {
+                name,
+                value: env::var_os(name),
+            };
+            unsafe {
+                env::set_var(name, value);
+            }
+            guard
+        }
+
+        fn remove(name: &'static str) -> Self {
+            let guard = Self {
+                name,
+                value: env::var_os(name),
+            };
+            unsafe {
+                env::remove_var(name);
+            }
+            guard
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            restore_env_var(self.name, self.value.clone());
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn test_service_name_or_default_uses_env_when_config_is_blank() {
+        let _service_name = EnvVarGuard::set("OTEL_SERVICE_NAME", "iii-engine");
+
+        assert_eq!(service_name_or_default(""), "iii-engine");
+        assert_eq!(service_name_or_default("   "), "iii-engine");
+    }
+
+    #[test]
+    #[serial]
+    fn test_service_name_or_default_uses_builtin_default_when_config_and_env_are_blank() {
+        let _service_name = EnvVarGuard::set("OTEL_SERVICE_NAME", "");
+
+        assert_eq!(service_name_or_default(""), "iii");
+    }
+
+    #[test]
+    #[serial]
+    fn test_service_version_or_default_uses_env_when_config_is_blank() {
+        let _service_version = EnvVarGuard::set("SERVICE_VERSION", "1.2.3");
+
+        assert_eq!(service_version_or_default(""), "1.2.3");
+    }
+
+    #[test]
+    #[serial]
+    fn test_service_version_or_default_uses_builtin_default_when_config_and_env_are_blank() {
+        let _service_version = EnvVarGuard::remove("SERVICE_VERSION");
+
+        assert_eq!(service_version_or_default(""), "unknown");
+    }
 
     #[tokio::test]
     #[serial]
