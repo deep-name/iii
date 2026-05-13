@@ -676,6 +676,10 @@ impl SpanExporter for TeeSpanExporter {
     fn shutdown_with_timeout(&mut self, timeout: std::time::Duration) -> OTelSdkResult {
         self.otlp_exporter.shutdown_with_timeout(timeout)
     }
+
+    fn set_resource(&mut self, resource: &Resource) {
+        self.otlp_exporter.set_resource(resource);
+    }
 }
 
 static TRACER_PROVIDER: OnceLock<SdkTracerProvider> = OnceLock::new();
