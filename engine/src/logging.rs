@@ -408,6 +408,12 @@ fn extract_otel_config(cfg: &EngineConfig) -> OtelConfig {
     if let Some(service_name) = module_config.service_name {
         otel_cfg.service_name = service_name;
     }
+    if let Some(service_version) = module_config.service_version {
+        otel_cfg.service_version = service_version;
+    }
+    if let Some(service_namespace) = module_config.service_namespace {
+        otel_cfg.service_namespace = Some(service_namespace);
+    }
     if let Some(exporter) = module_config.exporter {
         otel_cfg.exporter = match exporter {
             crate::workers::observability::config::OtelExporterType::Memory => ExporterType::Memory,
@@ -1042,6 +1048,8 @@ mod tests {
                 config: Some(serde_json::json!({
                     "enabled": true,
                     "service_name": "test-service",
+                    "service_version": "1.2.3",
+                    "service_namespace": "production",
                     "exporter": "memory",
                     "endpoint": "http://collector:4317",
                     "sampling_ratio": 0.25,
@@ -1054,6 +1062,8 @@ mod tests {
         let otel = extract_otel_config(&cfg);
         assert!(otel.enabled);
         assert_eq!(otel.service_name, "test-service");
+        assert_eq!(otel.service_version, "1.2.3");
+        assert_eq!(otel.service_namespace.as_deref(), Some("production"));
         assert!(matches!(otel.exporter, ExporterType::Memory));
         assert_eq!(otel.endpoint, "http://collector:4317");
         assert_eq!(otel.sampling_ratio, 0.25);
